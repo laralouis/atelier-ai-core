@@ -1,7 +1,7 @@
 
 /**
  * ATELIER AI – Spezialisierte Lernmodule
- * Version 0.1
+ * Version 0.2
  */
 
 export const MODULE_DEFINITIONS = {
@@ -20,7 +20,7 @@ export const MODULE_DEFINITIONS = {
   tutor: {
     name: "Lernassistent",
     purpose: "Individuelle Lernbegleitung",
-    tasks: ["ask", "quiz", "solve", "review"]
+    tasks: ["explain", "quiz", "solve", "review"]
   },
 
   writing: {
