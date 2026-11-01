@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>ATELIER AI</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #101827;
+      color: #edf3fb;
+      font-family: system-ui, sans-serif;
+    }
+    main { max-width: 760px; margin: auto; }
+    section {
+      background: #1b293c;
+      border: 1px solid #33445c;
+      border-radius: 16px;
+      padding: 20px;
+      margin: 18px 0;
+    }
+    textarea, select, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 9px;
+      font: inherit;
+    }
+    textarea, select {
+      background: #101827;
+      color: white;
+      border: 1px solid #40536c;
+    }
+    button {
+      background: #315f91;
+      color: white;
+      border: 0;
+      font-weight: bold;
+    }
+    #answer { white-space: pre-wrap; line-height: 1.6; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ATELIER AI</h1>
+  <p>Dein persönlicher Lernkern</p>
+
+  <section>
+    <h2>Lernassistent</h2>
+    <select id="subject">
+      <option>Mathematik</option>
+      <option>Deutsch</option>
+      <option>Geographie</option>
+      <option>Chemie</option>
+      <option>Musik</option>
+      <option>Sport</option>
+      <option>Spanisch</option>
+      <option>Englisch</option>
+      <option>Biologie</option>
+      <option>Geschichte</option>
+      <option>Politik und Gesellschaft</option>
+      <option>Evangelische Religion</option>
+    </select>
+
+    <select id="mode">
+      <option value="explain">Erklären</option>
+      <option value="quiz">Abfragen</option>
+      <option value="steps">Schrittweise lernen</option>
+    </select>
+
+    <textarea id="question"
+      placeholder="Was möchtest du lernen?"></textarea>
+
+    <button id="ask">Lernanfrage vorbereiten</button>
+    <p id="answer">ATELIER AI ist bereit.</p>
+  </section>
+</main>
+
+<script>
+document.getElementById("ask").onclick = () => {
+  const subject = document.getElementById("subject").value;
+  const mode = document.getElementById("mode").value;
+  const question = document.getElementById("question").value.trim();
+
+  if (!question) {
+    document.getElementById("answer").textContent =
+      "Bitte gib zuerst eine Frage ein.";
+    return;
+  }
+
+  document.getElementById("answer").textContent =
+    "Deine Lernanfrage wurde vorbereitet.\n\n" +
+    "Fach: " + subject + "\n" +
+    "Lernmodus: " + mode + "\n" +
+    "Frage: " + question +
+    "\n\nDer KI-Kern wird im nächsten Entwicklungsschritt verbunden.";
+};
+</script>
+</body>
+</html>
