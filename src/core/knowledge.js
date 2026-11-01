@@ -1,7 +1,7 @@
 
 /**
  * ATELIER AI – Gemeinsame Wissensbasis
- * Version 0.1
+ * Version 0.2
  *
  * Speicherung lokal im Browser über IndexedDB.
  */
@@ -12,6 +12,11 @@ const STORE_NAME = "materials";
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("IndexedDB wird nicht unterstützt."));
+      return;
+    }
+
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = () => {
@@ -34,13 +39,12 @@ function openDatabase() {
 }
 
 export class KnowledgeBase {
-  async add({
-    subject,
-    title,
-    content,
-    source = "manual"
-  }) {
-    if (!subject || !title || !content) {
+  async add({ subject, title, content, source = "manual" }) {
+    if (
+      !subject ||
+      !title?.trim() ||
+      !content?.trim()
+    ) {
       throw new Error(
         "Fach, Titel und Inhalt sind erforderlich."
       );
@@ -56,8 +60,8 @@ export class KnowledgeBase {
 
       const request = transaction.objectStore(STORE_NAME).add({
         subject,
-        title,
-        content,
+        title: title.trim(),
+        content: content.trim(),
         source,
         createdAt: new Date().toISOString()
       });
@@ -66,7 +70,11 @@ export class KnowledgeBase {
       request.onerror = () => reject(request.error);
 
       transaction.oncomplete = () => db.close();
-      transaction.onerror = () => db.close();
+
+      transaction.onabort = () => {
+        db.close();
+        reject(transaction.error);
+      };
     });
   }
 
@@ -85,17 +93,22 @@ export class KnowledgeBase {
         ? store.index("subject").getAll(subject)
         : store.getAll();
 
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-
+      request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
 
       transaction.oncomplete = () => db.close();
+      transaction.onabort = () => {
+        db.close();
+        reject(transaction.error);
+      };
     });
   }
 
   async search(query, subject = null) {
+    if (typeof query !== "string" || !query.trim()) {
+      return [];
+    }
+
     const materials = await this.getAll(subject);
 
     const words = query
