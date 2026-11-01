@@ -1,12 +1,13 @@
 
 /**
  * ATELIER AI – Lern-Engine
- * Verbindet KI, Wissensbasis und Module.
+ * Verbindet KI, Wissensbasis, Module und Recherche.
  */
 
 import { atelierAI } from "./ai.js";
 import { knowledgeBase } from "./knowledge.js";
 import { moduleRouter } from "./modules.js";
+import { researchPolicy } from "./research.js";
 
 const TASK_MODES = {
   explain: "explain",
@@ -22,13 +23,14 @@ export class AtelierEngine {
     task = "explain",
     question,
     grade = 12,
-    level = "grundlegend"
+    level = "grundlegend",
+    forceResearch = false
   }) {
     const module = moduleRouter.getModule(moduleId);
 
     if (!module.tasks.includes(task)) {
       throw new Error(
-        `Die Aufgabe ${task} ist für ${module.name} nicht vorgesehen.`
+        `Aufgabe ${task} ist für ${module.name} nicht vorgesehen.`
       );
     }
 
@@ -40,13 +42,20 @@ export class AtelierEngine {
       );
     }
 
-    // Passende Lernmaterialien suchen
+    // 1. Eigene Lernmaterialien durchsuchen
     const materials = await knowledgeBase.search(
       question,
       subject
     );
 
-    // Anfrage für den KI-Kern vorbereiten
+    // 2. Prüfen, ob externe Recherche sinnvoll ist
+    const shouldResearch = researchPolicy.shouldResearch({
+      question,
+      localMatches: materials,
+      force: forceResearch
+    });
+
+    // 3. Anfrage an den KI-Kern vorbereiten
     const request = atelierAI.createRequest({
       subject,
       mode,
@@ -59,14 +68,27 @@ export class AtelierEngine {
       }))
     });
 
-    // Anfrage an den konfigurierten Anbieter übergeben
+    // Recherchebedarf für den späteren Suchdienst
+    request.research = {
+      recommended: shouldResearch,
+      status: "not_connected"
+    };
+
+    // 4. KI-Anfrage ausführen
     const result = await atelierAI.ask(request);
 
     return {
       module: module.name,
       subject,
       task,
-      sources: materials.map(item => item.title),
+      localSources: materials.map(item => item.title),
+      research: {
+        recommended: shouldResearch,
+        status: "not_connected",
+        message: shouldResearch
+          ? "Externe Recherche ist sinnvoll, aber noch nicht angeschlossen."
+          : "Die lokalen Lernmaterialien reichen zunächst aus."
+      },
       result
     };
   }
