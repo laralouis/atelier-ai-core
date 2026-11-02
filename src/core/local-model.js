@@ -167,6 +167,9 @@ export class LocalModel {
 
     const models = webllm.prebuiltAppConfig.model_list || [];
 
+console.log("Anzahl registrierter Modelle:", models.length);
+console.log("3B-Modelle:", models.filter(model => /3B/i.test(model.model_id)).map(model => model.model_id));
+
     console.log("WebLLM-Version:", webllm.version || "nicht angegeben");
     console.log("Registrierte Modelle:", models.length);
 
