@@ -186,6 +186,73 @@ h2{font-size:32px}
   </div>
 </section>
 
+<!-- LERNASSISTENT -->
+<section id="page-tutor" class="hidden">
+  <div class="hero">
+    <p class="eyebrow">ATELIER · Lernassistent</p>
+    <h1>Verstehen, <em>statt auswendig lernen.</em></h1>
+    <p class="intro">
+      Stelle fachliche Fragen, lasse dir Zusammenhänge erklären
+      und arbeite Schritt für Schritt an schwierigen Themen.
+    </p>
+  </div>
+
+  <div class="panel">
+    <p class="eyebrow">Deine Lernbegleitung</p>
+    <h2>Wobei brauchst du Unterstützung?</h2>
+
+    <div class="form-grid" style="margin-top:22px">
+      <div class="field">
+        <label for="tutorSubject">Schulfach</label>
+        <select id="tutorSubject">
+          <option>Mathematik</option>
+          <option>Deutsch</option>
+          <option>Geographie</option>
+          <option>Chemie</option>
+          <option>Musik</option>
+          <option>Sport</option>
+          <option>Spanisch</option>
+          <option>Englisch</option>
+          <option>Evangelische Religion</option>
+          <option>Biologie</option>
+          <option>Politik und Gesellschaft</option>
+          <option>Geschichte</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="tutorMode">Unterstützungsform</label>
+        <select id="tutorMode">
+          <option value="explain">Thema erklären</option>
+          <option value="solve">Schrittweise gemeinsam lösen</option>
+          <option value="review">Meine Antwort überprüfen</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="tutorQuestion">Deine Frage</label>
+      <textarea id="tutorQuestion"
+        placeholder="Beschreibe, was du verstehen möchtest ..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>
+        <input type="checkbox" id="tutorMaterials" checked
+          style="width:auto">
+        Eigene Unterrichtsmaterialien berücksichtigen
+      </label>
+    </div>
+
+    <button class="button" id="askTutor">Frage stellen</button>
+
+    <div id="tutorStatus" class="status">
+      Dein Lernassistent wartet auf deine Frage.
+    </div>
+
+    <div id="tutorResult" class="result-text hidden"></div>
+  </div>
+</section>
 <!-- PROBEPRÜFUNGEN -->
 <section id="page-exams" class="hidden">
   <div class="hero">
