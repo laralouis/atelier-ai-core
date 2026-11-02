@@ -161,39 +161,36 @@ export class LocalModel {
     return this.webllm;
   }
 
-async getAvailableModels() {
-  const webllm = await this.loadWebLLM();
 
-  const models = webllm.prebuiltAppConfig.model_list;
+  async getAvailableModels() {
+    const webllm = await this.loadWebLLM();
 
-  const target = models.filter(model =>
-    model.model_id.toLowerCase().includes("llama-3.2-3b")
-  );
+    const models = webllm.prebuiltAppConfig.model_list || [];
 
-  console.log("WebLLM-Version:", webllm.version || "nicht angegeben");
-  console.log("Anzahl registrierter Modelle:", models.length);
-  console.log("Gesuchtes 3B-Modell:", target);
+    console.log("WebLLM-Version:", webllm.version || "nicht angegeben");
+    console.log("Registrierte Modelle:", models.length);
 
-  console.table(
-    models
-      .filter(model => /3B/i.test(model.model_id))
+    console.table(
+      models
+        .filter(model => /3B/i.test(model.model_id))
+        .map(model => ({
+          id: model.model_id,
+          vram: model.vram_required_MB
+        }))
+    );
+
+    return models
+      .filter(model =>
+        /(0\.5B|0\.6B|1B|3B|7B)(?=[-_])/i.test(model.model_id)
+      )
       .map(model => ({
         id: model.model_id,
+        name: model.model_id,
         vram: model.vram_required_MB
-      }))
-  );
+      }));
+  }
 
-  return models
-    .filter(model =>
-      /(0\\.5B|0\\.6B|1B|3B)(?=[-_])/i.test(model.model_id)
-    )
-    .map(model => ({
-      id: model.model_id,
-      name: model.model_id,
-      vram: model.vram_required_MB
-    }));
-}
-
+  
   return models
     .filter(model => /(0\.5B|0\.6B|1B|3B|7B)(?=[-_])/i.test(model.model_id))
     .map(model => ({
