@@ -796,6 +796,21 @@
 </footer>
 
 <script type="module">
+window.addEventListener("error", event => {
+  const box = document.createElement("div");
+  box.style.cssText =
+    "padding:15px;background:#f5dddd;color:#742d2d;position:relative;z-index:9999;overflow-wrap:anywhere";
+  box.textContent = "JavaScript-Fehler: " + event.message;
+  document.body.prepend(box);
+});
+
+window.addEventListener("unhandledrejection", event => {
+  const box = document.createElement("div");
+  box.style.cssText =
+    "padding:15px;background:#f5dddd;color:#742d2d;position:relative;z-index:9999;overflow-wrap:anywhere";
+  box.textContent = "Modulfehler: " + String(event.reason);
+  document.body.prepend(box);
+});
   import { atelierAI } from "./src/core/ai.js";
   import { learningStudio } from "./src/core/learning-studio.js";
   import { materialImporter } from "./src/core/material-import.js";
