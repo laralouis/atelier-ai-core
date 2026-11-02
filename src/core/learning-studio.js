@@ -78,8 +78,6 @@ function extractJSON(text) {
 }
 
 function validateItems(format, items) {
-
-function validateItems(format, items) {
   if (!Array.isArray(items) || !items.length) {
     throw new Error("Die KI hat keine Übungen erstellt.");
   }
