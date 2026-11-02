@@ -554,7 +554,49 @@ function showResult(id,text){
   $(id).classList.remove("hidden");
 }
 
-/* LERNASSISTENT */
+/* LERNASSISTENT – FORTLAUFENDER CHAT */
+
+const tutorConversation = [];
+
+function renderTutorChat() {
+  const chat = $("tutorChat");
+  chat.replaceChildren();
+
+  if (tutorConversation.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "chat-empty";
+
+    const title = document.createElement("p");
+    title.textContent = "Dein Gespräch beginnt hier.";
+
+    const description = document.createElement("span");
+    description.textContent =
+      "Stelle eine Frage zu einem Unterrichtsthema.";
+
+    empty.append(title, description);
+    chat.append(empty);
+    return;
+  }
+
+  tutorConversation.forEach(message => {
+    const item = document.createElement("div");
+    item.className = "chat-message " + message.role;
+
+    const label = document.createElement("div");
+    label.className = "chat-message-label";
+    label.textContent =
+      message.role === "user" ? "Du" : "ATELIER AI";
+
+    const content = document.createElement("div");
+    content.className = "chat-message-content";
+    content.textContent = message.content;
+
+    item.append(label, content);
+    chat.append(item);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
 
 $("askTutor").addEventListener("click", async () => {
   const question = $("tutorQuestion").value.trim();
@@ -562,30 +604,58 @@ $("askTutor").addEventListener("click", async () => {
   if (!question) {
     setStatus(
       "tutorStatus",
-      "Bitte zuerst eine Frage eingeben.",
+      "Bitte zuerst eine Nachricht eingeben.",
       "error"
     );
     return;
   }
 
-  $("askTutor").disabled = true;
-  $("tutorResult").classList.add("hidden");
+  const button = $("askTutor");
+  button.disabled = true;
+
+  tutorConversation.push({
+    role: "user",
+    content: question
+  });
+
+  $("tutorQuestion").value = "";
+  renderTutorChat();
 
   setStatus(
     "tutorStatus",
-    "Dein Lernassistent bearbeitet die Frage ..."
+    "ATELIER AI bearbeitet deine Nachricht ..."
   );
 
   try {
+    const conversationContext = tutorConversation
+      .slice(-12)
+      .map(message => {
+        const role =
+          message.role === "user" ? "SCHÜLER" : "LERNASSISTENT";
+
+        return role + ":\n" + message.content;
+      })
+      .join("\n\n");
+
     const answer = await askAI({
       subject: $("tutorSubject").value,
       mode: $("tutorMode").value,
-      question,
+      question:
+        "Setze das folgende Gespräch fort. " +
+        "Beziehe dich auf frühere Nachrichten und beantworte " +
+        "insbesondere die letzte Schülernachricht. " +
+        "Antworte fachlich korrekt und verständlich.\n\n" +
+        conversationContext,
       level: "anspruchsvoll",
       materials: $("tutorMaterials").checked
     });
 
-    showResult("tutorResult", answer);
+    tutorConversation.push({
+      role: "assistant",
+      content: answer
+    });
+
+    renderTutorChat();
 
     setStatus(
       "tutorStatus",
@@ -594,15 +664,41 @@ $("askTutor").addEventListener("click", async () => {
     );
 
   } catch (error) {
+    // Bei einem Fehler bleibt die Nachricht im Verlauf.
+    // Sie kann nach Behebung des Fehlers erneut gesendet werden.
     setStatus(
       "tutorStatus",
       "Fehler: " + error.message,
       "error"
     );
+
   } finally {
-    $("askTutor").disabled = false;
+    button.disabled = false;
+    $("tutorQuestion").focus();
   }
-});  
+});
+
+$("clearTutorChat").addEventListener("click", () => {
+  tutorConversation.length = 0;
+  renderTutorChat();
+
+  setStatus(
+    "tutorStatus",
+    "Gespräch wurde zurückgesetzt.",
+    "success"
+  );
+});
+
+$("tutorQuestion").addEventListener("keydown", event => {
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !$("askTutor").disabled
+  ) {
+    event.preventDefault();
+    $("askTutor").click();
+  }
+});
 /* LERNSTUDIO */
 let selectedFormat=null;
 let currentSet=null;
