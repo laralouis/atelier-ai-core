@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -163,7 +162,9 @@ h2{font-size:32px}
     <p id="formatDescription" class="muted">Wähle oben eine Lernmethode aus.</p>
 
     <div class="form-grid" style="margin-top:22px">
-      <div class="field"><label for="subject">Schulfach</label><select id="subject"></select></div>
+      <div class="field"><label for="subject">Schulfach</label><select id="subject">
+        <option>Mathematik</option><option>Deutsch</option><option>Geographie</option><option>Chemie</option><option>Musik</option><option>Sport</option><option>Spanisch</option><option>Englisch</option><option>Evangelische Religion</option><option>Biologie</option><option>Politik und Gesellschaft</option><option>Geschichte</option>
+      </select></div>
       <div class="field"><label for="level">Schwierigkeitsgrad</label>
         <select id="level"><option value="grundlegend">Grundlegend</option><option value="mittel">Mittel</option><option value="anspruchsvoll">Anspruchsvoll</option></select>
       </div>
@@ -197,7 +198,9 @@ h2{font-size:32px}
     <h2>Deine Prüfung</h2>
 
     <div class="form-grid" style="margin-top:22px">
-      <div class="field"><label for="examSubject">Schulfach</label><select id="examSubject"></select></div>
+      <div class="field"><label for="examSubject">Schulfach</label><select id="examSubject">
+        <option>Mathematik</option><option>Deutsch</option><option>Geographie</option><option>Chemie</option><option>Musik</option><option>Sport</option><option>Spanisch</option><option>Englisch</option><option>Evangelische Religion</option><option>Biologie</option><option>Politik und Gesellschaft</option><option>Geschichte</option>
+      </select></div>
       <div class="field"><label for="examLevel">Anforderungsniveau</label>
         <select id="examLevel"><option value="grundlegend">Grundlegend</option><option value="mittel">Mittel</option><option value="anspruchsvoll">Anspruchsvoll</option></select>
       </div>
@@ -246,7 +249,9 @@ h2{font-size:32px}
     <h2>Dein Schreibauftrag</h2>
 
     <div class="form-grid" style="margin-top:22px">
-      <div class="field"><label for="writingSubject">Schulfach</label><select id="writingSubject"></select></div>
+      <div class="field"><label for="writingSubject">Schulfach</label><select id="writingSubject">
+        <option>Mathematik</option><option>Deutsch</option><option>Geographie</option><option>Chemie</option><option>Musik</option><option>Sport</option><option>Spanisch</option><option>Englisch</option><option>Evangelische Religion</option><option>Biologie</option><option>Politik und Gesellschaft</option><option>Geschichte</option>
+      </select></div>
       <div class="field"><label for="writingType">Textsorte</label>
         <select id="writingType">
           <option>Erörterung</option>
@@ -298,7 +303,9 @@ h2{font-size:32px}
   <div class="panel">
     <h2>Material importieren</h2>
     <p class="muted">Unterstützt werden PDF und TXT.</p>
-    <div class="field"><label for="materialSubject">Schulfach</label><select id="materialSubject"></select></div>
+    <div class="field"><label for="materialSubject">Schulfach</label><select id="materialSubject">
+      <option>Mathematik</option><option>Deutsch</option><option>Geographie</option><option>Chemie</option><option>Musik</option><option>Sport</option><option>Spanisch</option><option>Englisch</option><option>Evangelische Religion</option><option>Biologie</option><option>Politik und Gesellschaft</option><option>Geschichte</option>
+    </select></div>
     <div class="field"><label for="materialFile">Datei auswählen</label><input type="file" id="materialFile" accept=".pdf,.txt,application/pdf,text/plain"></div>
     <button class="button" id="importMaterial">Material importieren</button>
     <div id="materialStatus" class="status">Noch keine Datei importiert.</div>
@@ -353,48 +360,104 @@ h2{font-size:32px}
   });
 })();
 </script>
-
 <!-- Anwendungslogik -->
 <script type="module">
 const errorDisplay=document.getElementById("errorDisplay");
+const $=id=>document.getElementById(id);
 
 window.addEventListener("error",event=>{
   errorDisplay.classList.remove("hidden");
   errorDisplay.textContent="JavaScript-Fehler: "+event.message;
 });
+
 window.addEventListener("unhandledrejection",event=>{
   errorDisplay.classList.remove("hidden");
   errorDisplay.textContent="Modulfehler: "+String(event.reason);
 });
 
-try{
-const [{atelierAI},{learningStudio},{materialImporter},{knowledgeBase}]=await Promise.all([
-  import("./src/core/ai.js"),
-  import("./src/core/learning-studio.js"),
-  import("./src/core/material-import.js"),
-  import("./src/core/knowledge.js")
-]);
+const subjects=[
+  "Mathematik","Deutsch","Geographie","Chemie","Musik","Sport",
+  "Spanisch","Englisch","Evangelische Religion","Biologie",
+  "Politik und Gesellschaft","Geschichte"
+];
 
-const $=id=>document.getElementById(id);
-const subjects=["Mathematik","Deutsch","Geographie","Chemie","Musik","Sport","Spanisch","Englisch","Evangelische Religion","Biologie","Politik und Gesellschaft","Geschichte"];
-
+/* Fachauswahl unabhängig von den Modulen initialisieren */
 ["subject","examSubject","writingSubject","materialSubject"].forEach(id=>{
-  $(id).replaceChildren(...subjects.map(subject=>{
-    const option=document.createElement("option");
-    option.value=subject;
-    option.textContent=subject;
-    return option;
-  }));
+  const select=$(id);
+  if(!select)return;
+  if(!select.options.length){
+    subjects.forEach(subject=>{
+      const option=document.createElement("option");
+      option.value=subject;
+      option.textContent=subject;
+      select.append(option);
+    });
+  }
 });
 
+/* Module einzeln laden, damit ein Fehler nicht alles blockiert */
+const moduleErrors=[];
+
+async function safeImport(name,path){
+  try{
+    return await import(path);
+  }catch(error){
+    const message=name+": "+(error.message||String(error));
+    moduleErrors.push(message);
+    console.error(message,error);
+    return null;
+  }
+}
+
+const [aiModule,learningModule,importerModule,knowledgeModule]=await Promise.all([
+  safeImport("KI-Modul","./src/core/ai.js"),
+  safeImport("Lernstudio-Modul","./src/core/learning-studio.js"),
+  safeImport("Materialimport-Modul","./src/core/material-import.js"),
+  safeImport("Wissensbasis-Modul","./src/core/knowledge.js")
+]);
+
+const atelierAI=aiModule?.atelierAI;
+const learningStudio=learningModule?.learningStudio;
+const materialImporter=importerModule?.materialImporter;
+const knowledgeBase=knowledgeModule?.knowledgeBase;
+
+/* Fehler anzeigen, ohne die übrige Anwendung abzubrechen */
+if(moduleErrors.length){
+  errorDisplay.classList.remove("hidden");
+  errorDisplay.textContent=
+    "Einige Funktionen konnten nicht geladen werden: "+
+    moduleErrors.join(" | ");
+}
+
 async function askAI({subject,mode,question,level="mittel",materials=true}){
-  if(!atelierAI.getStatus().localModel.ready)throw new Error("Bitte zuerst unter KI-Modell ein lokales Modell laden.");
-  const context=materials?await knowledgeBase.search(question,subject):[];
-  const request=atelierAI.createRequest({subject,mode,question,materials:context,grade:12,level});
+  if(!atelierAI){
+    throw new Error("Das KI-Modul konnte nicht geladen werden. Prüfe src/core/ai.js.");
+  }
+
+  if(!atelierAI.getStatus().localModel.ready){
+    throw new Error("Bitte zuerst unter KI-Modell ein lokales Modell laden.");
+  }
+
+  const context=materials&&knowledgeBase
+    ?await knowledgeBase.search(question,subject)
+    :[];
+
+  const request=atelierAI.createRequest({
+    subject,mode,question,materials:context,grade:12,level
+  });
+
   const response=await atelierAI.ask(request);
-  if(response.status==="offline")throw new Error(response.message||"Das KI-Modell ist nicht verfügbar.");
+
+  if(response.status==="offline"){
+    throw new Error(response.message||"Das KI-Modell ist nicht verfügbar.");
+  }
+
   const answer=response.answer||response.text||response.output;
-  if(typeof answer!=="string")throw new Error("Die KI hat keine lesbare Antwort zurückgegeben.");
+
+  if(typeof answer!=="string"){
+    throw new Error("Die KI hat keine lesbare Antwort zurückgegeben.");
+  }
+
   return answer;
 }
 
@@ -409,12 +472,26 @@ function showResult(id,text){
 }
 
 /* LERNSTUDIO */
-let selectedFormat=null,currentSet=null,currentIndex=0,revealed=false,selectedAnswers={},completed={};
+let selectedFormat=null;
+let currentSet=null;
+let currentIndex=0;
+let revealed=false;
+let selectedAnswers={};
+let completed={};
 
 const formatDetails={
-  flashcards:{title:"Karteikarten",description:"Lerne mit präzisen Fragen und verständlichen Antworten."},
-  multipleChoice:{title:"Multiple Choice",description:"Überprüfe dein Wissen mit vier Antwortmöglichkeiten."},
-  cloze:{title:"Lückentexte",description:"Ergänze fehlende Begriffe und Zusammenhänge."}
+  flashcards:{
+    title:"Karteikarten",
+    description:"Lerne mit präzisen Fragen und verständlichen Antworten."
+  },
+  multipleChoice:{
+    title:"Multiple Choice",
+    description:"Überprüfe dein Wissen mit vier Antwortmöglichkeiten."
+  },
+  cloze:{
+    title:"Lückentexte",
+    description:"Ergänze fehlende Begriffe und Zusammenhänge."
+  }
 };
 
 document.querySelectorAll("[data-format]").forEach(button=>{
@@ -422,190 +499,489 @@ document.querySelectorAll("[data-format]").forEach(button=>{
     selectedFormat=button.dataset.format;
     $("formatTitle").textContent=formatDetails[selectedFormat].title;
     $("formatDescription").textContent=formatDetails[selectedFormat].description;
-    setStatus("generationStatus","Format ausgewählt: "+formatDetails[selectedFormat].title);
+    setStatus(
+      "generationStatus",
+      "Format ausgewählt: "+formatDetails[selectedFormat].title
+    );
+
     document.querySelectorAll("[data-format]").forEach(tile=>{
-      tile.style.outline=tile.dataset.format===selectedFormat?"2px solid #857866":"none";
+      tile.style.outline=
+        tile.dataset.format===selectedFormat
+          ?"2px solid #857866"
+          :"none";
     });
   });
 });
 
 $("generate").addEventListener("click",async()=>{
-  if(!selectedFormat){setStatus("generationStatus","Bitte zuerst ein Lernformat auswählen.","error");return;}
+  if(!selectedFormat){
+    setStatus("generationStatus","Bitte zuerst ein Lernformat auswählen.","error");
+    return;
+  }
+
+  if(!learningStudio){
+    setStatus(
+      "generationStatus",
+      "Das Lernstudio-Modul konnte nicht geladen werden. Prüfe src/core/learning-studio.js.",
+      "error"
+    );
+    return;
+  }
+
   const topic=$("topic").value.trim();
-  if(!topic){setStatus("generationStatus","Bitte ein Thema eingeben.","error");return;}
+
+  if(!topic){
+    setStatus("generationStatus","Bitte ein Thema eingeben.","error");
+    return;
+  }
+
   $("generate").disabled=true;
   setStatus("generationStatus","Die KI erstellt deine Übungen. Das kann etwas dauern ...");
+
   try{
     currentSet=await learningStudio.generate({
-      format:selectedFormat,subject:$("subject").value,topic,
-      count:Number($("count").value),level:$("level").value,
+      format:selectedFormat,
+      subject:$("subject").value,
+      topic,
+      count:Number($("count").value),
+      level:$("level").value,
       useMaterials:$("useMaterials").checked
     });
-    currentIndex=0;revealed=false;selectedAnswers={};completed={};
-    setStatus("generationStatus",currentSet.items.length+" Übungen erstellt. "+currentSet.materialCount+" Materialien berücksichtigt.","success");
+
+    if(!currentSet||!Array.isArray(currentSet.items)||!currentSet.items.length){
+      throw new Error("Es wurden keine gültigen Übungen erstellt.");
+    }
+
+    currentIndex=0;
+    revealed=false;
+    selectedAnswers={};
+    completed={};
+
+    setStatus(
+      "generationStatus",
+      currentSet.items.length+" Übungen erstellt. "+
+      (currentSet.materialCount||0)+" Materialien berücksichtigt.",
+      "success"
+    );
+
     $("exerciseArea").classList.remove("hidden");
     $("exerciseHeading").textContent=formatDetails[selectedFormat].title;
     $("nextExercise").disabled=false;
+
     renderExercise();
-    $("exerciseArea").scrollIntoView({behavior:"smooth",block:"start"});
-  }catch(error){setStatus("generationStatus","Fehler: "+error.message,"error");}
-  finally{$("generate").disabled=false;}
+
+    $("exerciseArea").scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+
+  }catch(error){
+    setStatus("generationStatus","Fehler: "+error.message,"error");
+  }finally{
+    $("generate").disabled=false;
+  }
 });
 
 function renderExercise(){
   if(!currentSet)return;
-  const item=currentSet.items[currentIndex],area=$("exerciseContent");
+
+  const item=currentSet.items[currentIndex];
+  const area=$("exerciseContent");
+
   area.replaceChildren();
-  $("exerciseCounter").textContent=(currentIndex+1)+" / "+currentSet.items.length;
-  $("exerciseProgress").style.width=((currentIndex+1)/currentSet.items.length*100)+"%";
+
+  $("exerciseCounter").textContent=
+    (currentIndex+1)+" / "+currentSet.items.length;
+
+  $("exerciseProgress").style.width=
+    ((currentIndex+1)/currentSet.items.length*100)+"%";
+
   $("previousExercise").disabled=currentIndex===0;
-  $("nextExercise").textContent=currentIndex===currentSet.items.length-1?"Einheit abschließen":"Weiter";
+  $("nextExercise").textContent=
+    currentIndex===currentSet.items.length-1
+      ?"Einheit abschließen"
+      :"Weiter";
+
   $("exerciseSummary").classList.add("hidden");
+
   if(currentSet.format==="flashcards")renderFlashcard(item,area);
   if(currentSet.format==="multipleChoice")renderMultipleChoice(item,area);
   if(currentSet.format==="cloze")renderCloze(item,area);
 }
 
 function renderFlashcard(item,area){
-  const card=document.createElement("div");card.className="flashcard";
-  const content=document.createElement("div"),text=document.createElement("p"),hint=document.createElement("small");
+  const card=document.createElement("div");
+  card.className="flashcard";
+
+  const content=document.createElement("div");
+  const text=document.createElement("p");
+  const hint=document.createElement("small");
+
   text.textContent=revealed?item.answer:item.question;
-  hint.textContent=revealed?"Antwort · Weiter zum nächsten Schritt":"Frage · Zum Aufdecken antippen";
-  content.append(text,hint);card.append(content);
-  card.addEventListener("click",()=>{revealed=!revealed;renderExercise();});
+
+  hint.textContent=revealed
+    ?"Antwort · Weiter zum nächsten Schritt"
+    :"Frage · Zum Aufdecken antippen";
+
+  content.append(text,hint);
+  card.append(content);
+
+  card.addEventListener("click",()=>{
+    revealed=!revealed;
+    renderExercise();
+  });
+
   area.append(card);
+
   if(revealed&&!completed[currentIndex]){
-    const button=document.createElement("button");button.className="button soft";button.textContent="Als gelernt markieren";
-    button.addEventListener("click",()=>{completed[currentIndex]=true;button.disabled=true;button.textContent="Als gelernt markiert";});
+    const button=document.createElement("button");
+    button.className="button soft";
+    button.textContent="Als gelernt markieren";
+
+    button.addEventListener("click",()=>{
+      completed[currentIndex]=true;
+      button.disabled=true;
+      button.textContent="Als gelernt markiert";
+    });
+
     area.append(button);
   }
 }
 
 function renderMultipleChoice(item,area){
-  const question=document.createElement("div");question.className="exercise-question";question.textContent=item.question;area.append(question);
+  const question=document.createElement("div");
+  question.className="exercise-question";
+  question.textContent=item.question;
+  area.append(question);
+
   item.options.forEach((option,index)=>{
-    const button=document.createElement("button");button.className="answer";button.textContent=option;
-    if(selectedAnswers[currentIndex]===index)button.classList.add("selected");
+    const button=document.createElement("button");
+    button.className="answer";
+    button.textContent=option;
+
+    if(selectedAnswers[currentIndex]===index){
+      button.classList.add("selected");
+    }
+
     if(completed[currentIndex]){
       button.disabled=true;
-      if(index===item.correctIndex)button.classList.add("correct");
-      else if(selectedAnswers[currentIndex]===index)button.classList.add("wrong");
+
+      if(index===item.correctIndex){
+        button.classList.add("correct");
+      }else if(selectedAnswers[currentIndex]===index){
+        button.classList.add("wrong");
+      }
     }
-    button.addEventListener("click",()=>{if(completed[currentIndex])return;selectedAnswers[currentIndex]=index;completed[currentIndex]=true;renderExercise();});
+
+    button.addEventListener("click",()=>{
+      if(completed[currentIndex])return;
+
+      selectedAnswers[currentIndex]=index;
+      completed[currentIndex]=true;
+      renderExercise();
+    });
+
     area.append(button);
   });
+
   if(completed[currentIndex]){
-    const feedback=document.createElement("div");feedback.className="feedback";
-    feedback.textContent=(selectedAnswers[currentIndex]===item.correctIndex?"Richtig. ":"Nicht richtig. ")+item.explanation;
+    const feedback=document.createElement("div");
+    feedback.className="feedback";
+
+    feedback.textContent=
+      (selectedAnswers[currentIndex]===item.correctIndex
+        ?"Richtig. "
+        :"Nicht richtig. ")+item.explanation;
+
     area.append(feedback);
   }
 }
 
 function renderCloze(item,area){
-  const container=document.createElement("div");container.className="exercise-question";
-  const parts=item.text.split("{{LUECKE}}"),inputs=[];
+  const container=document.createElement("div");
+  container.className="exercise-question";
+
+  const parts=item.text.split("{{LUECKE}}");
+  const inputs=[];
+
   parts.forEach((part,index)=>{
     container.append(document.createTextNode(part));
+
     if(index<item.answers.length){
-      const input=document.createElement("input");input.placeholder="Deine Lösung";input.style.width="auto";input.style.minWidth="110px";input.style.maxWidth="190px";input.style.margin="5px";
+      const input=document.createElement("input");
+      input.placeholder="Deine Lösung";
+      input.style.width="auto";
+      input.style.minWidth="110px";
+      input.style.maxWidth="190px";
+      input.style.margin="5px";
+
       input.disabled=Boolean(completed[currentIndex]);
-      if(completed[currentIndex])input.value=selectedAnswers[currentIndex]?.[index]||"";
-      inputs.push(input);container.append(input);
+
+      if(completed[currentIndex]){
+        input.value=selectedAnswers[currentIndex]?.[index]||"";
+      }
+
+      inputs.push(input);
+      container.append(input);
     }
   });
+
   area.append(container);
+
   if(!completed[currentIndex]){
-    const check=document.createElement("button");check.className="button";check.textContent="Antworten überprüfen";check.style.marginTop="15px";
+    const check=document.createElement("button");
+    check.className="button";
+    check.textContent="Antworten überprüfen";
+    check.style.marginTop="15px";
+
     check.addEventListener("click",()=>{
       const values=inputs.map(input=>input.value.trim());
-      if(values.some(value=>!value)){alert("Bitte alle Lücken ausfüllen.");return;}
-      selectedAnswers[currentIndex]=values;completed[currentIndex]=true;renderExercise();
+
+      if(values.some(value=>!value)){
+        alert("Bitte alle Lücken ausfüllen.");
+        return;
+      }
+
+      selectedAnswers[currentIndex]=values;
+      completed[currentIndex]=true;
+      renderExercise();
     });
+
     area.append(check);
+
   }else{
     const values=selectedAnswers[currentIndex]||[];
-    const correct=item.answers.filter((answer,index)=>answer.toLowerCase().trim()===(values[index]||"").toLowerCase().trim()).length;
-    const feedback=document.createElement("div");feedback.className="feedback";
-    feedback.textContent=correct+" von "+item.answers.length+" Lücken richtig. Lösungen: "+item.answers.join(", ")+". "+item.explanation;
+
+    const correct=item.answers.filter((answer,index)=>
+      answer.toLowerCase().trim()===(values[index]||"").toLowerCase().trim()
+    ).length;
+
+    const feedback=document.createElement("div");
+    feedback.className="feedback";
+
+    feedback.textContent=
+      correct+" von "+item.answers.length+
+      " Lücken richtig. Lösungen: "+
+      item.answers.join(", ")+". "+item.explanation;
+
     area.append(feedback);
   }
 }
 
-$("previousExercise").addEventListener("click",()=>{if(currentIndex>0){currentIndex--;revealed=false;renderExercise();}});
+$("previousExercise").addEventListener("click",()=>{
+  if(currentIndex>0){
+    currentIndex--;
+    revealed=false;
+    renderExercise();
+  }
+});
+
 $("nextExercise").addEventListener("click",()=>{
   if(!currentSet)return;
-  if(currentIndex<currentSet.items.length-1){currentIndex++;revealed=false;renderExercise();return;}
+
+  if(currentIndex<currentSet.items.length-1){
+    currentIndex++;
+    revealed=false;
+    renderExercise();
+    return;
+  }
+
   $("exerciseSummary").classList.remove("hidden");
-  $("exerciseSummary").textContent="Lerneinheit beendet. "+Object.keys(completed).length+" von "+currentSet.items.length+" Übungen bearbeitet.";
-  $("nextExercise").disabled=true;$("nextExercise").textContent="Abgeschlossen";
+
+  $("exerciseSummary").textContent=
+    "Lerneinheit beendet. "+
+    Object.keys(completed).length+
+    " von "+currentSet.items.length+
+    " Übungen bearbeitet.";
+
+  $("nextExercise").disabled=true;
+  $("nextExercise").textContent="Abgeschlossen";
 });
 
 /* PROBEPRÜFUNGEN */
-let examSet=[],examIndex=0,examAnswers={},examFinished=false;
+let examSet=[];
+let examIndex=0;
+let examAnswers={};
+let examFinished=false;
 
 $("createExam").addEventListener("click",async()=>{
   const topic=$("examTopic").value.trim();
-  if(!topic){setStatus("examStatus","Bitte ein Prüfungsthema eingeben.","error");return;}
+
+  if(!topic){
+    setStatus("examStatus","Bitte ein Prüfungsthema eingeben.","error");
+    return;
+  }
+
+  if(!atelierAI){
+    setStatus("examStatus","Das KI-Modul konnte nicht geladen werden.","error");
+    return;
+  }
+
   $("createExam").disabled=true;
   setStatus("examStatus","Die Prüfung wird erstellt ...");
+
   try{
     const subject=$("examSubject").value;
     const type=$("examType").value;
     const count=Number($("examCount").value);
     const level=$("examLevel").value;
+
     const prompt=`Erstelle eine Probeprüfung für die gymnasiale Oberstufe in Bayern.
 Fach: ${subject}. Thema: ${topic}. Prüfungsformat: ${type}. Niveau: ${level}.
 Erstelle genau ${count} offene, fachlich anspruchsvolle Aufgaben.
 Gib ausschließlich ein JSON-Objekt im Format {"questions":[{"question":"Aufgabenstellung","criteria":"Erwartungshorizont und wichtige Bewertungskriterien"}]} zurück.
 Keine Musterlösungen direkt in den Aufgaben anzeigen.`;
 
-    const response=await askAI({subject,mode:"quiz",question:prompt,level,materials:$("examMaterials").checked});
+    const response=await askAI({
+      subject,
+      mode:"quiz",
+      question:prompt,
+      level,
+      materials:$("examMaterials").checked
+    });
+
     const match=response.match(/\{[\s\S]*\}/);
-    if(!match)throw new Error("Die KI hat kein gültiges Aufgabenformat geliefert.");
+
+    if(!match){
+      throw new Error("Die KI hat kein gültiges Aufgabenformat geliefert.");
+    }
+
     const data=JSON.parse(match[0]);
-    if(!Array.isArray(data.questions)||!data.questions.length)throw new Error("Es wurden keine Aufgaben erstellt.");
-    examSet=data.questions;examIndex=0;examAnswers={};examFinished=false;
+
+    if(!Array.isArray(data.questions)||!data.questions.length){
+      throw new Error("Es wurden keine Aufgaben erstellt.");
+    }
+
+    examSet=data.questions;
+    examIndex=0;
+    examAnswers={};
+    examFinished=false;
+
     $("examArea").classList.remove("hidden");
     $("examHeading").textContent=subject+" · "+topic;
     $("examResult").classList.add("hidden");
     $("examNext").disabled=false;
+
     renderExam();
-    setStatus("examStatus",examSet.length+" Prüfungsaufgaben erstellt.","success");
-    $("examArea").scrollIntoView({behavior:"smooth",block:"start"});
-  }catch(error){setStatus("examStatus","Fehler: "+error.message,"error");}
-  finally{$("createExam").disabled=false;}
+
+    setStatus(
+      "examStatus",
+      examSet.length+" Prüfungsaufgaben erstellt.",
+      "success"
+    );
+
+    $("examArea").scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+
+  }catch(error){
+    setStatus("examStatus","Fehler: "+error.message,"error");
+  }finally{
+    $("createExam").disabled=false;
+  }
 });
 
 function renderExam(){
   if(!examSet.length)return;
-  $("examCounter").textContent=(examIndex+1)+" / "+examSet.length;
-  $("examProgress").style.width=((examIndex+1)/examSet.length*100)+"%";
+
+  $("examCounter").textContent=
+    (examIndex+1)+" / "+examSet.length;
+
+  $("examProgress").style.width=
+    ((examIndex+1)/examSet.length*100)+"%";
+
   $("examPrevious").disabled=examIndex===0;
-  $("examNext").textContent=examIndex===examSet.length-1?"Prüfung abgeben":"Nächste Aufgabe";
-  const area=$("examQuestions");area.replaceChildren();
+
+  $("examNext").textContent=
+    examIndex===examSet.length-1
+      ?"Prüfung abgeben"
+      :"Nächste Aufgabe";
+
+  const area=$("examQuestions");
+  area.replaceChildren();
+
   const item=examSet[examIndex];
-  const title=document.createElement("div");title.className="exercise-question";title.textContent="Aufgabe "+(examIndex+1)+": "+item.question;
-  const input=document.createElement("textarea");input.style.minHeight="180px";input.placeholder="Deine Antwort ...";input.value=examAnswers[examIndex]||"";
-  input.addEventListener("input",()=>{examAnswers[examIndex]=input.value;});
+
+  const title=document.createElement("div");
+  title.className="exercise-question";
+  title.textContent="Aufgabe "+(examIndex+1)+": "+item.question;
+
+  const input=document.createElement("textarea");
+  input.style.minHeight="180px";
+  input.placeholder="Deine Antwort ...";
+  input.value=examAnswers[examIndex]||"";
+
+  input.addEventListener("input",()=>{
+    examAnswers[examIndex]=input.value;
+  });
+
   area.append(title,input);
 }
 
-$("examPrevious").addEventListener("click",()=>{if(examIndex>0){examIndex--;renderExam();}});
+$("examPrevious").addEventListener("click",()=>{
+  if(examIndex>0){
+    examIndex--;
+    renderExam();
+  }
+});
+
 $("examNext").addEventListener("click",async()=>{
   if(!examSet.length||examFinished)return;
-  if(examIndex<examSet.length-1){examIndex++;renderExam();return;}
-  const unanswered=examSet.filter((item,index)=>!(examAnswers[index]||"").trim()).length;
-  if(unanswered&&!confirm(unanswered+" Aufgaben sind noch unbeantwortet. Prüfung trotzdem abgeben?"))return;
-  examFinished=true;$("examNext").disabled=true;
+
+  if(examIndex<examSet.length-1){
+    examIndex++;
+    renderExam();
+    return;
+  }
+
+  const unanswered=examSet.filter((item,index)=>
+    !(examAnswers[index]||"").trim()
+  ).length;
+
+  if(
+    unanswered&&
+    !confirm(unanswered+" Aufgaben sind noch unbeantwortet. Prüfung trotzdem abgeben?")
+  ){
+    return;
+  }
+
+  examFinished=true;
+  $("examNext").disabled=true;
+
   setStatus("examResult","Deine Antworten werden ausgewertet ...");
   $("examResult").classList.remove("hidden");
+
   try{
     const subject=$("examSubject").value;
-    const submission=examSet.map((item,index)=>`Aufgabe ${index+1}: ${item.question}\nErwartungshorizont: ${item.criteria}\nAntwort: ${examAnswers[index]||"(nicht beantwortet)"}`).join("\n\n");
-    const feedback=await askAI({subject,mode:"review",level:$("examLevel").value,materials:$("examMaterials").checked,question:"Werte diese Probeprüfung anhand des Erwartungshorizonts aus. Gib für jede Aufgabe fachliches Feedback, Stärken, Fehler, fehlende Aspekte und konkrete Verbesserungshinweise. Erfinde keine Punktzahl, wenn keine belastbare Bewertung möglich ist.\n\n"+submission});
+
+    const submission=examSet.map((item,index)=>
+      `Aufgabe ${index+1}: ${item.question}\nErwartungshorizont: ${item.criteria}\nAntwort: ${examAnswers[index]||"(nicht beantwortet)"}`
+    ).join("\n\n");
+
+    const feedback=await askAI({
+      subject,
+      mode:"review",
+      level:$("examLevel").value,
+      materials:$("examMaterials").checked,
+      question:
+        "Werte diese Probeprüfung anhand des Erwartungshorizonts aus. "+
+        "Gib für jede Aufgabe fachliches Feedback, Stärken, Fehler, "+
+        "fehlende Aspekte und konkrete Verbesserungshinweise. "+
+        "Erfinde keine Punktzahl, wenn keine belastbare Bewertung möglich ist.\n\n"+
+        submission
+    });
+
     showResult("examResult",feedback);
     $("examResult").classList.add("status");
-  }catch(error){setStatus("examResult","Auswertung fehlgeschlagen: "+error.message,"error");}
+
+  }catch(error){
+    setStatus(
+      "examResult",
+      "Auswertung fehlgeschlagen: "+error.message,
+      "error"
+    );
+  }
 });
 
 /* SCHREIBATELIER */
@@ -613,140 +989,361 @@ async function writingRequest(mode){
   const subject=$("writingSubject").value;
   const type=$("writingType").value;
   const topic=$("writingTopic").value.trim();
-  if(!topic)throw new Error("Bitte zuerst einen Schreibauftrag eingeben.");
+
+  if(!topic){
+    throw new Error("Bitte zuerst einen Schreibauftrag eingeben.");
+  }
+
   const level=$("writingLevel").value;
+
   const question=`Du bist die Schreibberatung von ATELIER AI für die gymnasiale Oberstufe in Bayern.
 Fach: ${subject}. Textsorte: ${type}. Niveau: ${level}.
 Aufgabenstellung: ${topic}
-${mode==="outline"?"Erstelle eine differenzierte Gliederung mit Einleitung, Hauptteil, Schluss, Argumentationsgang und Hinweisen zu passenden Fachbegriffen. Schreibe nicht den vollständigen Text.":"Gib eine Schreibberatung: erläutere Anforderungen, sinnvolle Struktur, Argumentationsstrategie, fachliche Kriterien und typische Fehler. Schreibe nicht den vollständigen Text."}`;
-  return askAI({subject,mode:"explain",level,materials:$("writingMaterials").checked,question});
+${mode==="outline"
+  ?"Erstelle eine differenzierte Gliederung mit Einleitung, Hauptteil, Schluss, Argumentationsgang und Hinweisen zu passenden Fachbegriffen. Schreibe nicht den vollständigen Text."
+  :"Gib eine Schreibberatung: erläutere Anforderungen, sinnvolle Struktur, Argumentationsstrategie, fachliche Kriterien und typische Fehler. Schreibe nicht den vollständigen Text."}`;
+
+  return askAI({
+    subject,
+    mode:"explain",
+    level,
+    materials:$("writingMaterials").checked,
+    question
+  });
 }
 
 $("createOutline").addEventListener("click",async()=>{
-  $("createOutline").disabled=true;setStatus("writingStatus","Die Gliederung wird erstellt ...");
+  $("createOutline").disabled=true;
+  setStatus("writingStatus","Die Gliederung wird erstellt ...");
+
   try{
     const result=await writingRequest("outline");
-    showResult("writingResult",result);setStatus("writingStatus","Gliederung erstellt.","success");
-  }catch(error){setStatus("writingStatus","Fehler: "+error.message,"error");}
-  finally{$("createOutline").disabled=false;}
+    showResult("writingResult",result);
+    setStatus("writingStatus","Gliederung erstellt.","success");
+  }catch(error){
+    setStatus("writingStatus","Fehler: "+error.message,"error");
+  }finally{
+    $("createOutline").disabled=false;
+  }
 });
 
 $("writingHelp").addEventListener("click",async()=>{
-  $("writingHelp").disabled=true;setStatus("writingStatus","Die Schreibberatung wird vorbereitet ...");
+  $("writingHelp").disabled=true;
+  setStatus("writingStatus","Die Schreibberatung wird vorbereitet ...");
+
   try{
     const result=await writingRequest("help");
-    showResult("writingResult",result);setStatus("writingStatus","Schreibberatung erstellt.","success");
-  }catch(error){setStatus("writingStatus","Fehler: "+error.message,"error");}
-  finally{$("writingHelp").disabled=false;}
+    showResult("writingResult",result);
+    setStatus("writingStatus","Schreibberatung erstellt.","success");
+  }catch(error){
+    setStatus("writingStatus","Fehler: "+error.message,"error");
+  }finally{
+    $("writingHelp").disabled=false;
+  }
 });
 
 async function reviewText(improve){
   const draft=$("draftText").value.trim();
-  if(!draft){setStatus("reviewStatus","Bitte zuerst einen Text eingeben.","error");return;}
+
+  if(!draft){
+    setStatus("reviewStatus","Bitte zuerst einen Text eingeben.","error");
+    return;
+  }
+
   const subject=$("writingSubject").value;
   const type=$("writingType").value;
+
   const question=improve
     ?`Schlage konkrete Überarbeitungen für diesen Text vor. Erhalte die eigene Stimme der schreibenden Person. Erkläre, welche Stellen verbessert werden sollten, und gib beispielhafte Alternativformulierungen. Schreibe nicht ungefragt den gesamten Text neu.\nTextsorte: ${type}\nText:\n${draft}`
     :`Analysiere diesen Text fachlich und sprachlich. Prüfe Aufgabenbezug, Aufbau, Argumentation, Fachsprache, Belege, Kohärenz und sprachliche Richtigkeit. Nenne konkrete Stärken und Verbesserungsmöglichkeiten. Erfinde keine Note.\nTextsorte: ${type}\nText:\n${draft}`;
+
   const button=improve?"improveDraft":"reviewDraft";
-  $(button).disabled=true;setStatus("reviewStatus","Der Text wird analysiert ...");
+
+  $(button).disabled=true;
+  setStatus("reviewStatus","Der Text wird analysiert ...");
+
   try{
-    const result=await askAI({subject,mode:"review",level:$("writingLevel").value,materials:false,question});
-    showResult("reviewResult",result);setStatus("reviewStatus","Analyse abgeschlossen.","success");
-  }catch(error){setStatus("reviewStatus","Fehler: "+error.message,"error");}
-  finally{$(button).disabled=false;}
+    const result=await askAI({
+      subject,
+      mode:"review",
+      level:$("writingLevel").value,
+      materials:false,
+      question
+    });
+
+    showResult("reviewResult",result);
+    setStatus("reviewStatus","Analyse abgeschlossen.","success");
+
+  }catch(error){
+    setStatus("reviewStatus","Fehler: "+error.message,"error");
+  }finally{
+    $(button).disabled=false;
+  }
 }
+
 $("reviewDraft").addEventListener("click",()=>reviewText(false));
 $("improveDraft").addEventListener("click",()=>reviewText(true));
 
 /* MATERIALIEN */
 async function refreshMaterials(){
-  const list=$("materialList");list.replaceChildren();
+  const list=$("materialList");
+  list.replaceChildren();
+
+  if(!knowledgeBase){
+    list.textContent=
+      "Das Wissensbasis-Modul konnte nicht geladen werden. Prüfe src/core/knowledge.js.";
+    return;
+  }
+
   try{
     const materials=await knowledgeBase.getAll($("materialSubject").value);
-    if(!materials.length){list.textContent="Für dieses Fach sind noch keine Materialien gespeichert.";return;}
+
+    if(!materials.length){
+      list.textContent="Für dieses Fach sind noch keine Materialien gespeichert.";
+      return;
+    }
+
     materials.forEach(material=>{
-      const item=document.createElement("div");item.className="material-item";
-      const title=document.createElement("strong");title.textContent=material.title;
-      const detail=document.createElement("p");detail.className="muted";detail.textContent=material.subject+" · "+(material.content||"").length+" Zeichen";
-      const remove=document.createElement("button");remove.className="button secondary";remove.textContent="Löschen";remove.style.marginTop="8px";
+      const item=document.createElement("div");
+      item.className="material-item";
+
+      const title=document.createElement("strong");
+      title.textContent=material.title;
+
+      const detail=document.createElement("p");
+      detail.className="muted";
+      detail.textContent=
+        material.subject+" · "+(material.content||"").length+" Zeichen";
+
+      const remove=document.createElement("button");
+      remove.className="button secondary";
+      remove.textContent="Löschen";
+      remove.style.marginTop="8px";
+
       remove.addEventListener("click",async()=>{
         if(!confirm("Dieses Material wirklich löschen?"))return;
-        await knowledgeBase.remove(material.id);refreshMaterials();
+
+        try{
+          await knowledgeBase.remove(material.id);
+          await refreshMaterials();
+        }catch(error){
+          list.textContent="Fehler beim Löschen: "+error.message;
+        }
       });
-      item.append(title,detail,remove);list.append(item);
+
+      item.append(title,detail,remove);
+      list.append(item);
     });
-  }catch(error){list.textContent="Fehler: "+error.message;}
+
+  }catch(error){
+    list.textContent="Fehler: "+error.message;
+  }
 }
+
 window.refreshAtelierMaterials=refreshMaterials;
+
 $("refreshMaterials").addEventListener("click",refreshMaterials);
 $("materialSubject").addEventListener("change",refreshMaterials);
 
 $("importMaterial").addEventListener("click",async()=>{
   const file=$("materialFile").files[0];
-  if(!file){setStatus("materialStatus","Bitte zuerst eine Datei auswählen.","error");return;}
-  $("importMaterial").disabled=true;setStatus("materialStatus","Datei wird verarbeitet ...");
+
+  if(!file){
+    setStatus("materialStatus","Bitte zuerst eine Datei auswählen.","error");
+    return;
+  }
+
+  if(!materialImporter||!knowledgeBase){
+    setStatus(
+      "materialStatus",
+      "Materialimport oder Wissensbasis konnte nicht geladen werden. Prüfe die Module in src/core/.",
+      "error"
+    );
+    return;
+  }
+
+  $("importMaterial").disabled=true;
+  setStatus("materialStatus","Datei wird verarbeitet ...");
+
   try{
     const material=await materialImporter.importFile(file);
-    await knowledgeBase.add({subject:$("materialSubject").value,title:material.title,content:material.content,source:"Lokaler Dateiimport"});
-    $("materialFile").value="";setStatus("materialStatus","Material erfolgreich gespeichert.","success");await refreshMaterials();
-  }catch(error){setStatus("materialStatus","Import fehlgeschlagen: "+error.message,"error");}
-  finally{$("importMaterial").disabled=false;}
+
+    await knowledgeBase.add({
+      subject:$("materialSubject").value,
+      title:material.title,
+      content:material.content,
+      source:"Lokaler Dateiimport"
+    });
+
+    $("materialFile").value="";
+
+    setStatus(
+      "materialStatus",
+      "Material erfolgreich gespeichert.",
+      "success"
+    );
+
+    await refreshMaterials();
+
+  }catch(error){
+    setStatus(
+      "materialStatus",
+      "Import fehlgeschlagen: "+error.message,
+      "error"
+    );
+  }finally{
+    $("importMaterial").disabled=false;
+  }
 });
 
 /* LOKALES KI-MODELL */
 async function checkGPU(){
+  if(!atelierAI){
+    setStatus(
+      "gpuStatus",
+      "Das KI-Modul konnte nicht geladen werden. Prüfe src/core/ai.js.",
+      "error"
+    );
+    return;
+  }
+
   try{
     const result=await atelierAI.checkSupport();
-    setStatus("gpuStatus",result.reason,result.supported?"success":"error");
-  }catch(error){setStatus("gpuStatus",error.message,"error");}
+    setStatus(
+      "gpuStatus",
+      result.reason,
+      result.supported?"success":"error"
+    );
+  }catch(error){
+    setStatus("gpuStatus",error.message,"error");
+  }
 }
+
 function updateModelButtons(){
+  if(!atelierAI){
+    $("loadModel").disabled=true;
+    $("unloadModel").disabled=true;
+    $("model").disabled=true;
+    $("loadModels").disabled=true;
+    return;
+  }
+
   const status=atelierAI.getStatus().localModel;
-  $("loadModel").disabled=status.ready||status.loading||!$("model").value;
+
+  $("loadModel").disabled=
+    status.ready||status.loading||!$("model").value;
+
   $("unloadModel").disabled=!status.ready;
   $("model").disabled=status.ready||status.loading;
   $("loadModels").disabled=status.loading;
-  if(status.ready)setStatus("modelStatus","Modell geladen: "+status.model,"success");
+
+  if(status.ready){
+    setStatus("modelStatus","Modell geladen: "+status.model,"success");
+  }
 }
+
 $("loadModels").addEventListener("click",async()=>{
-  $("loadModels").disabled=true;setStatus("modelStatus","Modellliste wird geladen ...");
+  if(!atelierAI){
+    setStatus("modelStatus","Das KI-Modul konnte nicht geladen werden.","error");
+    return;
+  }
+
+  $("loadModels").disabled=true;
+  setStatus("modelStatus","Modellliste wird geladen ...");
+
   try{
     const models=await atelierAI.getAvailableModels();
-    const select=$("model");select.replaceChildren();
+    const select=$("model");
+
+    select.replaceChildren();
+
     models.forEach(model=>{
-      const option=document.createElement("option");option.value=model.id;option.textContent=model.name;select.append(option);
+      const option=document.createElement("option");
+      option.value=model.id;
+      option.textContent=model.name;
+      select.append(option);
     });
-    if(!models.length)throw new Error("Keine passenden Modelle gefunden.");
-    select.disabled=false;setStatus("modelStatus",models.length+" Modelle gefunden.","success");
-  }catch(error){setStatus("modelStatus","Fehler: "+error.message,"error");}
-  finally{$("loadModels").disabled=false;updateModelButtons();}
+
+    if(!models.length){
+      throw new Error("Keine passenden Modelle gefunden.");
+    }
+
+    select.disabled=false;
+
+    setStatus(
+      "modelStatus",
+      models.length+" Modelle gefunden.",
+      "success"
+    );
+
+  }catch(error){
+    setStatus("modelStatus","Fehler: "+error.message,"error");
+  }finally{
+    $("loadModels").disabled=false;
+    updateModelButtons();
+  }
 });
+
 $("model").addEventListener("change",updateModelButtons);
+
 $("loadModel").addEventListener("click",async()=>{
-  $("loadModel").disabled=true;$("model").disabled=true;setStatus("modelStatus","Modell wird geladen ...");$("progress").value=0;
+  if(!atelierAI){
+    setStatus("modelStatus","Das KI-Modul konnte nicht geladen werden.","error");
+    return;
+  }
+
+  $("loadModel").disabled=true;
+  $("model").disabled=true;
+  setStatus("modelStatus","Modell wird geladen ...");
+  $("progress").value=0;
+
   try{
     await atelierAI.loadModel($("model").value,report=>{
-      $("progress").value=report.progress;setStatus("modelStatus",report.text+" ("+report.progress+"%)");
+      $("progress").value=report.progress;
+
+      setStatus(
+        "modelStatus",
+        report.text+" ("+report.progress+"%)"
+      );
     });
-    setStatus("modelStatus","Modell erfolgreich geladen.","success");
-  }catch(error){setStatus("modelStatus","Fehler: "+error.message,"error");}
-  finally{updateModelButtons();}
+
+    setStatus(
+      "modelStatus",
+      "Modell erfolgreich geladen.",
+      "success"
+    );
+
+  }catch(error){
+    setStatus("modelStatus","Fehler: "+error.message,"error");
+  }finally{
+    updateModelButtons();
+  }
 });
+
 $("unloadModel").addEventListener("click",async()=>{
+  if(!atelierAI){
+    setStatus("modelStatus","Das KI-Modul konnte nicht geladen werden.","error");
+    return;
+  }
+
   $("unloadModel").disabled=true;
-  try{await atelierAI.unloadModel();$("progress").value=0;setStatus("modelStatus","Modell entladen.");}
-  catch(error){setStatus("modelStatus",error.message,"error");}
+
+  try{
+    await atelierAI.unloadModel();
+    $("progress").value=0;
+    setStatus("modelStatus","Modell entladen.");
+  }catch(error){
+    setStatus("modelStatus",error.message,"error");
+  }
+
   updateModelButtons();
 });
 
-checkGPU();updateModelButtons();refreshMaterials();
+/* Initialisierung: jeder Bereich wird unabhängig vorbereitet */
+checkGPU();
+updateModelButtons();
+refreshMaterials();
 
-}catch(error){
-  errorDisplay.classList.remove("hidden");
-  errorDisplay.textContent="ATELIER konnte ein benötigtes Modul nicht laden: "+(error.message||String(error));
-  console.error(error);
-}
 </script>
 
 </body>
