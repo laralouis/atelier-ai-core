@@ -176,6 +176,16 @@ export class LocalModel {
 
 window.ATELIER_DIAGNOSTICS = diagnostics;
 
+window.alert(
+  "ATELIER AI – Modell-Diagnose\n\n" +
+  "WebLLM-Version: " + diagnostics.webllmVersion + "\n" +
+  "Registrierte Modelle: " + diagnostics.totalModels + "\n\n" +
+  "Registrierte 3B-Modelle:\n" +
+  (diagnostics.models3B.length
+    ? diagnostics.models3B.join("\n")
+    : "KEINE GEFUNDEN")
+);
+
 console.log("Anzahl registrierter Modelle:", models.length);
 console.log("3B-Modelle:", models.filter(model => /3B/i.test(model.model_id)).map(model => model.model_id));
 
