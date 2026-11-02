@@ -61,12 +61,20 @@ function extractJSON(text) {
 
   try {
     return JSON.parse(cleaned.slice(start, end + 1));
-  } catch {
+  } catch (error) {
+    console.error("ATELIER AI – JSON-Fehler:", error);
+    console.error(
+      "ATELIER AI – Empfangener JSON-Text:",
+      cleaned.slice(start, end + 1)
+    );
+
     throw new Error(
-      "Die KI-Antwort konnte nicht als Lernmaterial verarbeitet werden."
+      "JSON-Fehler: " +
+      error.message +
+      " | KI-Antwort: " +
+      cleaned.slice(start, Math.min(end + 1, start + 700))
     );
   }
-}
 
 function validateItems(format, items) {
   if (!Array.isArray(items) || !items.length) {
