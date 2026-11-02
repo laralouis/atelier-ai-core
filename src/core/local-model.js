@@ -7,8 +7,7 @@
  */
 
 const WEBLLM_URL = "https://esm.run/@mlc-ai/web-llm@0.2.87";
-const MODEL_PATTERN = /(0\.5B|0\.6B|1B)(?=[-_])/i;
-
+const MODEL_PATTERN = /(0\.5B|0\.6B|1B|3B)(?=[-_])/i;
 const MAX_CONTEXT_CHARS = 4500;
 const MAX_LOCAL_CHARS = 3600;
 const MAX_EXTERNAL_CHARS = 900;
