@@ -1,10 +1,10 @@
 
 /**
  * ATELIER AI – Lern-Engine
- * Version 0.2
+ * Version 0.3
  *
  * Verbindet:
- * - KI-Kern
+ * - KI-Kern und lokales KI-Modell
  * - Wissensbasis
  * - Lernmodule
  * - Externe Recherche
@@ -22,13 +22,18 @@ const TASK_MODES = {
   review: "review"
 };
 
+/**
+ * Externe wissenschaftliche Recherche.
+ */
 async function searchExternalSources(question) {
   const response = await fetch("/api/research", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ query: question })
+    body: JSON.stringify({
+      query: question
+    })
   });
 
   if (!response.ok) {
@@ -41,6 +46,10 @@ async function searchExternalSources(question) {
 }
 
 export class AtelierEngine {
+
+  /**
+   * Verarbeitet eine Lernanfrage.
+   */
   async learn({
     moduleId = "tutor",
     subject,
@@ -50,29 +59,40 @@ export class AtelierEngine {
     level = "grundlegend",
     forceResearch = false
   }) {
+
+    // 1. Eingaben prüfen
+    if (
+      typeof question !== "string" ||
+      !question.trim()
+    ) {
+      throw new Error("Bitte eine Frage eingeben.");
+    }
+
+    // 2. Lernmodul bestimmen
     const module = moduleRouter.getModule(moduleId);
 
     if (!module.tasks.includes(task)) {
       throw new Error(
-        `Aufgabe ${task} ist für ${module.name} nicht vorgesehen.`
+        `Die Aufgabe "${task}" ist für das Modul "${module.name}" nicht vorgesehen.`
       );
     }
 
+    // 3. Lernmodus bestimmen
     const mode = TASK_MODES[task];
 
     if (!mode) {
       throw new Error(
-        "Diese Aufgabe benötigt noch eine eigene Lernlogik."
+        `Die Aufgabe "${task}" benötigt noch eine eigene Lernlogik.`
       );
     }
 
-    // 1. Lokale Materialien durchsuchen
+    // 4. Lokale Wissensbasis durchsuchen
     const localMaterials = await knowledgeBase.search(
       question,
       subject
     );
 
-    // 2. Recherchebedarf ermitteln
+    // 5. Recherchebedarf bestimmen
     const shouldResearch = researchPolicy.shouldResearch({
       question,
       localMatches: localMaterials,
@@ -83,10 +103,12 @@ export class AtelierEngine {
     let researchStatus = "not_needed";
     let researchError = null;
 
-    // 3. Bei Bedarf externe Recherche durchführen
+    // 6. Externe Recherche durchführen
     if (shouldResearch) {
       try {
-        const searchData = await searchExternalSources(question);
+        const searchData = await searchExternalSources(
+          question
+        );
 
         externalResults = researchPolicy.filterResults(
           searchData.results || []
@@ -97,19 +119,22 @@ export class AtelierEngine {
           : "no_results";
 
         if (searchData.errors?.length) {
-          researchError = "Einige Suchdienste waren nicht erreichbar.";
+          researchError =
+            "Einige Rechercheanbieter waren nicht erreichbar.";
         }
+
       } catch (error) {
         researchStatus = "unavailable";
         researchError = error.message;
       }
     }
 
-    // 4. Externe Quellen als getrennten Kontext ergänzen
+    // 7. Externe Quellen als Lernmaterial aufbereiten
     const externalMaterials = externalResults.map(source => ({
       title: source.title,
+
       content: [
-        `Quelle: ${source.provider}`,
+        `Quelle: ${source.provider || "Unbekannt"}`,
         `Autoren: ${(source.authors || []).join(", ")}`,
         `Jahr: ${source.year || "unbekannt"}`,
         `Herausgeber: ${source.publisher || "unbekannt"}`,
@@ -119,18 +144,20 @@ export class AtelierEngine {
       ].join("\n")
     }));
 
-    // 5. KI-Anfrage erstellen
+    // 8. KI-Anfrage erstellen
     const request = atelierAI.createRequest({
       subject,
       mode,
       question,
       grade,
       level,
+
       materials: [
         ...localMaterials.map(item => ({
           title: `[Unterrichtsmaterial] ${item.title}`,
           content: item.content
         })),
+
         ...externalMaterials.map(item => ({
           title: `[Externe Quelle] ${item.title}`,
           content: item.content
@@ -138,20 +165,24 @@ export class AtelierEngine {
       ]
     });
 
+    // 9. Rechercheinformationen ergänzen
     request.research = {
       recommended: shouldResearch,
       status: researchStatus
     };
 
-    // 6. KI ausführen
+    // 10. Lokale KI ausführen
     const result = await atelierAI.ask(request);
 
+    // 11. Ergebnis zurückgeben
     return {
       module: module.name,
       subject,
       task,
 
-      localSources: localMaterials.map(item => item.title),
+      localSources: localMaterials.map(
+        item => item.title
+      ),
 
       externalSources: externalResults.map(source => ({
         title: source.title,
@@ -174,9 +205,13 @@ export class AtelierEngine {
     };
   }
 
+  /**
+   * Status des gesamten Systems.
+   */
   getSystemStatus() {
     return {
       ai: atelierAI.getStatus(),
+
       modules: moduleRouter.listModules()
     };
   }
