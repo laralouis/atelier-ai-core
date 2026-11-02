@@ -68,13 +68,16 @@ function extractJSON(text) {
       cleaned.slice(start, end + 1)
     );
 
-    throw new Error(
+        throw new Error(
       "JSON-Fehler: " +
       error.message +
       " | KI-Antwort: " +
       cleaned.slice(start, Math.min(end + 1, start + 700))
     );
   }
+}
+
+function validateItems(format, items) {
 
 function validateItems(format, items) {
   if (!Array.isArray(items) || !items.length) {
