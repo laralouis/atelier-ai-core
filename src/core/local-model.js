@@ -279,21 +279,18 @@ ZUSÄTZLICHE REGELN FÜR ATELIER AI:
 - Antworte strukturiert und verständlich.
 `;
 
-    const userMessage = context
-      ? `
-FRAGE:
+    const userMessage = `
 ${safeText(request.input)}
 
+${context ? `
+VERFÜGBARE UNTERRICHTSMATERIALIEN:
 ${context}
+` : ""}
 
-Bitte beantworte die Frage anhand der verfügbaren Informationen.
-Ergänze bei Bedarf relevantes Fachwissen.
-`
-      : `
-FRAGE:
-${safeText(request.input)}
-
-Beantworte die Frage fachlich korrekt und verständlich.
+WICHTIGE AUSGABEREGEL:
+${request.metadata?.mode === "quiz"
+  ? "Gib ausschließlich das verlangte JSON-Objekt zurück. Keine Einleitung, keine Erklärungen außerhalb des JSON und keine zusätzlichen Aufgabenformate."
+  : "Beantworte die Frage fachlich korrekt und verständlich."}
 `;
 
     try {
