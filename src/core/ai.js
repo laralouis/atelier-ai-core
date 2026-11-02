@@ -1,12 +1,17 @@
 
 /**
  * ATELIER AI – Central AI Coordinator
- * Version 0.1
+ * Version 0.2
+ *
+ * Verbindet den zentralen KI-Kern
+ * mit dem lokalen WebLLM-Modell.
  */
+
+import { localModel } from "./local-model.js";
 
 export const ATELIER_CONFIG = {
   name: "ATELIER AI",
-  version: "0.1.0",
+  version: "0.2.0",
   language: "de",
   schoolLevel: "Gymnasium Bayern – Jahrgangsstufe 12/13"
 };
@@ -44,21 +49,36 @@ const MODES = [
 
 export class AtelierAI {
   constructor() {
-    this.provider = null;
+    this.provider = localModel;
     this.modules = MODULES;
   }
 
   /**
-   * Später kann hier ein kostenloser
-   * Online- oder Offline-Anbieter
-   * angeschlossen werden.
+   * Prüft die lokale GPU-Unterstützung.
    */
-  setProvider(provider) {
-    if (!provider || typeof provider.generate !== "function") {
-      throw new Error("Ungültiger KI-Anbieter.");
-    }
+  async checkSupport() {
+    return await localModel.checkSupport();
+  }
 
-    this.provider = provider;
+  /**
+   * Gibt verfügbare kleine Modelle zurück.
+   */
+  async getAvailableModels() {
+    return await localModel.getAvailableModels();
+  }
+
+  /**
+   * Lädt ein ausgewähltes lokales Modell.
+   */
+  async loadModel(modelId, onProgress) {
+    return await localModel.load(modelId, onProgress);
+  }
+
+  /**
+   * Entlädt das aktuelle Modell.
+   */
+  async unloadModel() {
+    return await localModel.unload();
   }
 
   /**
@@ -80,7 +100,10 @@ export class AtelierAI {
       throw new Error("Unbekannter Lernmodus.");
     }
 
-    if (!question || !question.trim()) {
+    if (
+      typeof question !== "string" ||
+      !question.trim()
+    ) {
       throw new Error("Bitte eine Frage eingeben.");
     }
 
@@ -110,7 +133,7 @@ export class AtelierAI {
   }
 
   /**
-   * Fachbezogene Lernanweisungen.
+   * Erstellt die fachbezogenen Lernanweisungen.
    */
   getSystemPrompt({ subject, mode, grade, level }) {
     return `
@@ -129,6 +152,7 @@ Deine Aufgaben:
 - Erfinde keine Quellen oder Fakten.
 - Kennzeichne Unsicherheiten ausdrücklich.
 - Nutze bereitgestellte Lernmaterialien vorrangig.
+- Unterscheide gesicherte Fakten von Vermutungen.
 
 Lernmodus: ${mode}
 
@@ -158,14 +182,13 @@ keine andere Sprache verlangt.
   }
 
   /**
-   * Übergibt die Anfrage an einen angeschlossenen Anbieter.
+   * Führt eine Lernanfrage mit dem lokalen Modell aus.
    */
   async ask(request) {
-    if (!this.provider) {
+    if (!localModel.getStatus().ready) {
       return {
         status: "offline",
-        message:
-          "Noch ist kein generatives KI-Modell angeschlossen.",
+        message: "Bitte zuerst ein lokales KI-Modell laden.",
         request
       };
     }
@@ -173,11 +196,17 @@ keine andere Sprache verlangt.
     return await this.provider.generate(request);
   }
 
+  /**
+   * Zeigt den aktuellen Systemstatus.
+   */
   getStatus() {
     return {
       name: ATELIER_CONFIG.name,
       version: ATELIER_CONFIG.version,
-      providerConnected: Boolean(this.provider),
+      providerConnected: localModel.getStatus().ready,
+      provider: "WebLLM",
+      model: localModel.getStatus().model,
+      localModel: localModel.getStatus(),
       subjects: SUBJECTS.length,
       modules: Object.keys(MODULES).length
     };
