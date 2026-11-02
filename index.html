@@ -2,1092 +2,749 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#F7F5F0">
-  <title>ATELIER AI – Learning Space</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F7F5F0">
+<title>ATELIER AI – Learning Space</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <style>
-    :root {
-      --background: #F7F5F0;
-      --surface: #FFFFFF;
-      --ink: #30312E;
-      --muted: #85847D;
-      --line: #E7E3DB;
-      --sand: #E9E2D7;
-      --sage: #E3E9E1;
-      --terra: #EFE5DC;
-      --blue: #E3E8E9;
-      --green: #586B59;
-      --danger: #9B5550;
-      --serif: "Cormorant Garamond", Georgia, serif;
-      --sans: "DM Sans", Arial, sans-serif;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--background);
-      color: var(--ink);
-      font: 14px/1.65 var(--sans);
-    }
-
-    button, input, select, textarea { font: inherit; }
-    button { cursor: pointer; }
-    button:disabled { opacity: .45; cursor: not-allowed; }
-
-    .shell {
-      width: min(1120px, 100%);
-      margin: auto;
-      padding: 0 28px;
-    }
-
-    header {
-      border-bottom: 1px solid var(--line);
-      background: rgba(247,245,240,.96);
-    }
-
-    .topbar {
-      min-height: 78px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .brand {
-      font: 500 29px var(--serif);
-      letter-spacing: .06em;
-    }
-
-    .brand small {
-      display: block;
-      font: 9px var(--sans);
-      letter-spacing: .22em;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-    nav { display: flex; gap: 7px; flex-wrap: wrap; }
-
-    nav button {
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      padding: 9px 12px;
-      border-radius: 30px;
-      font-size: 12px;
-    }
-
-    nav button.active {
-      background: var(--sand);
-      color: var(--ink);
-    }
-
-    main { padding-top: 42px; padding-bottom: 70px; }
-
-    .eyebrow {
-      color: var(--muted);
-      font-size: 10px;
-      letter-spacing: .19em;
-      text-transform: uppercase;
-    }
-
-    h1, h2, h3 {
-      font-family: var(--serif);
-      font-weight: 400;
-      line-height: 1.12;
-      margin: 0;
-    }
-
-    h1 { font-size: clamp(42px, 7vw, 66px); }
-    h2 { font-size: 37px; }
-    h3 { font-size: 27px; }
-    em { color: #857866; }
-    .intro { max-width: 640px; color: var(--muted); margin-top: 12px; }
-    .hero { padding: 12px 0 35px; }
-
-    .section-heading {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 20px;
-      margin: 35px 0 18px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 15px;
-    }
-
-    .tile {
-      border: 1px solid transparent;
-      border-radius: 13px;
-      padding: 22px;
-      min-height: 145px;
-      text-align: left;
-      color: var(--ink);
-      transition: transform .2s, border-color .2s;
-    }
-
-    .tile:hover {
-      transform: translateY(-2px);
-      border-color: #CFC8BC;
-    }
-
-    .tile.sand { background: var(--sand); }
-    .tile.sage { background: var(--sage); }
-    .tile.terra { background: var(--terra); }
-    .tile.blue { background: var(--blue); }
-
-    .tile p {
-      margin: 5px 0 0;
-      font-size: 12px;
-      color: #77746D;
-    }
-
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 24px;
-      margin-top: 20px;
-    }
-
-    .hidden { display: none !important; }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 17px;
-    }
-
-    label {
-      display: block;
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 7px;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 12px 13px;
-      background: #FBFAF7;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--ink);
-      outline: none;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      border-color: #A69A86;
-    }
-
-    .field { margin-bottom: 16px; }
-
-    .button {
-      border: 1px solid var(--ink);
-      background: var(--ink);
-      color: white;
-      border-radius: 30px;
-      padding: 12px 22px;
-      font-size: 12px;
-    }
-
-    .button.secondary {
-      color: var(--ink);
-      background: transparent;
-      border-color: var(--line);
-    }
-
-    .button.soft {
-      color: var(--green);
-      background: var(--sage);
-      border-color: transparent;
-    }
-
-    .button-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .muted { color: var(--muted); font-size: 12px; }
-
-    .status {
-      margin-top: 13px;
-      padding: 12px 14px;
-      border-radius: 8px;
-      background: #F5F3EE;
-      color: var(--muted);
-      font-size: 12px;
-      overflow-wrap: anywhere;
-    }
-
-    .status.error { color: var(--danger); background: #F8EEEC; }
-    .status.success { color: var(--green); background: var(--sage); }
-
-    .exercise {
-      margin-top: 15px;
-      padding: 22px;
-      background: #FBFAF7;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-    }
-
-    .exercise-question {
-      font: 27px/1.3 var(--serif);
-      margin-bottom: 18px;
-    }
-
-    .answer {
-      width: 100%;
-      text-align: left;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px 14px;
-      background: white;
-      margin: 5px 0;
-      color: var(--ink);
-    }
-
-    .answer.selected { border-color: #87937F; background: var(--sage); }
-    .answer.correct { border-color: #77917B; background: #E3EDE2; }
-    .answer.wrong { border-color: #C78C83; background: #F6E8E5; }
-
-    .feedback {
-      margin-top: 14px;
-      padding: 13px;
-      background: var(--blue);
-      border-radius: 8px;
-      font-size: 12px;
-    }
-
-    .flashcard {
-      min-height: 190px;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 30px;
-      border-radius: 12px;
-      background: var(--sand);
-      cursor: pointer;
-    }
-
-    .flashcard p { font: 29px/1.3 var(--serif); margin: 0; }
-
-    .flashcard small {
-      display: block;
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 10px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
-
-    .progress-track {
-      height: 4px;
-      background: var(--line);
-      border-radius: 10px;
-      overflow: hidden;
-      margin: 15px 0;
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 0;
-      background: #84927E;
-      transition: width .2s;
-    }
-
-    .material-item {
-      padding: 13px 0;
-      border-bottom: 1px solid var(--line);
-      overflow-wrap: anywhere;
-    }
-
-    footer {
-      border-top: 1px solid var(--line);
-      padding: 22px 0;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    #errorDisplay {
-      margin: 12px;
-      padding: 14px;
-      background: #F8EEEC;
-      color: var(--danger);
-      border: 1px solid #E8C9C4;
-      border-radius: 8px;
-      overflow-wrap: anywhere;
-    }
-
-    @media (max-width: 700px) {
-      .shell { padding: 0 17px; }
-      .topbar { align-items: flex-start; flex-direction: column; padding: 16px 0; }
-      nav { width: 100%; }
-      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .form-grid { grid-template-columns: 1fr; }
-      .panel { padding: 18px; }
-      h2 { font-size: 32px; }
-    }
-
-    @media (max-width: 390px) {
-      .grid { grid-template-columns: 1fr; }
-    }
-  </style>
+<style>
+:root {
+  --background:#F7F5F0;
+  --surface:#FFFFFF;
+  --ink:#30312E;
+  --muted:#85847D;
+  --line:#E7E3DB;
+  --sand:#E9E2D7;
+  --sage:#E3E9E1;
+  --terra:#EFE5DC;
+  --blue:#E3E8E9;
+  --green:#586B59;
+  --danger:#9B5550;
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --sans:"DM Sans",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--background);color:var(--ink);font:14px/1.65 var(--sans)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.shell{width:min(1120px,100%);margin:auto;padding:0 28px}
+header{border-bottom:1px solid var(--line);background:rgba(247,245,240,.96)}
+.topbar{min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{font:500 29px var(--serif);letter-spacing:.06em}
+.brand small{display:block;font:9px var(--sans);letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+nav{display:flex;gap:7px;flex-wrap:wrap}
+nav button{border:0;background:transparent;color:var(--muted);padding:9px 12px;border-radius:30px;font-size:12px}
+nav button.active{background:var(--sand);color:var(--ink)}
+main{padding-top:42px;padding-bottom:70px}
+.eyebrow{color:var(--muted);font-size:10px;letter-spacing:.19em;text-transform:uppercase}
+h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.12;margin:0}
+h1{font-size:clamp(42px,7vw,66px)}
+h2{font-size:37px}
+h3{font-size:27px}
+em{color:#857866}
+.hero{padding:12px 0 35px}
+.intro{max-width:640px;color:var(--muted);margin-top:12px}
+.section-heading{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:35px 0 18px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.tile{border:1px solid transparent;border-radius:13px;padding:22px;min-height:145px;text-align:left;color:var(--ink);transition:transform .2s,border-color .2s}
+.tile:hover{transform:translateY(-2px);border-color:#CFC8BC}
+.tile.sand{background:var(--sand)}
+.tile.sage{background:var(--sage)}
+.tile.terra{background:var(--terra)}
+.tile.blue{background:var(--blue)}
+.tile p{margin:5px 0 0;font-size:12px;color:#77746D}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;margin-top:20px}
+.hidden{display:none!important}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+label{display:block;font-size:11px;color:var(--muted);margin-bottom:7px}
+input,select,textarea{width:100%;padding:12px 13px;background:#FBFAF7;border:1px solid var(--line);border-radius:8px;color:var(--ink);outline:none}
+input:focus,select:focus,textarea:focus{border-color:#A69A86}
+textarea{min-height:130px;resize:vertical}
+.field{margin-bottom:16px}
+.button{border:1px solid var(--ink);background:var(--ink);color:white;border-radius:30px;padding:12px 22px;font-size:12px}
+.button.secondary{color:var(--ink);background:transparent;border-color:var(--line)}
+.button.soft{color:var(--green);background:var(--sage);border-color:transparent}
+.button-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.muted{color:var(--muted);font-size:12px}
+.status{margin-top:13px;padding:12px 14px;border-radius:8px;background:#F5F3EE;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.status.error{color:var(--danger);background:#F8EEEC}
+.status.success{color:var(--green);background:var(--sage)}
+.exercise-question{font:27px/1.3 var(--serif);margin-bottom:18px}
+.answer{width:100%;text-align:left;border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:white;margin:5px 0;color:var(--ink)}
+.answer.selected{border-color:#87937F;background:var(--sage)}
+.answer.correct{border-color:#77917B;background:#E3EDE2}
+.answer.wrong{border-color:#C78C83;background:#F6E8E5}
+.feedback{margin-top:14px;padding:13px;background:var(--blue);border-radius:8px;font-size:12px}
+.flashcard{min-height:190px;display:grid;place-items:center;text-align:center;padding:30px;border-radius:12px;background:var(--sand);cursor:pointer}
+.flashcard p{font:29px/1.3 var(--serif);margin:0}
+.flashcard small{display:block;margin-top:18px;color:var(--muted);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.progress-track{height:4px;background:var(--line);border-radius:10px;overflow:hidden;margin:15px 0}
+.progress-fill{height:100%;width:0;background:#84927E;transition:width .2s}
+.material-item{padding:13px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.result-text{white-space:pre-wrap;overflow-wrap:anywhere;background:#FBFAF7;padding:18px;border-radius:10px;margin-top:15px}
+footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:11px}
+#errorDisplay{margin:12px;padding:14px;background:#F8EEEC;color:var(--danger);border:1px solid #E8C9C4;border-radius:8px;overflow-wrap:anywhere}
+@media(max-width:700px){
+.shell{padding:0 17px}
+.topbar{align-items:flex-start;flex-direction:column;padding:16px 0}
+nav{width:100%}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.form-grid{grid-template-columns:1fr}
+.panel{padding:18px}
+h2{font-size:32px}
+}
+@media(max-width:390px){.grid{grid-template-columns:1fr}}
+</style>
 </head>
 
 <body>
-
 <div id="errorDisplay" class="hidden" role="alert"></div>
 
 <header>
-  <div class="shell topbar">
-    <div class="brand">
-      ATELIER AI
-      <small>Independent Learning Space</small>
-    </div>
-    <nav>
-      <button class="active" data-page="home">Übersicht</button>
-      <button data-page="learning">Lernstudio</button>
-      <button data-page="materials">Materialien</button>
-      <button data-page="model">KI-Modell</button>
-    </nav>
-  </div>
+<div class="shell topbar">
+  <div class="brand">ATELIER AI<small>Independent Learning Space</small></div>
+  <nav>
+    <button class="active" data-page="home">Übersicht</button>
+    <button data-page="learning">Lernstudio</button>
+    <button data-page="exams">Probeprüfungen</button>
+    <button data-page="writing">Schreibatelier</button>
+    <button data-page="materials">Materialien</button>
+    <button data-page="model">KI-Modell</button>
+  </nav>
+</div>
 </header>
 
 <main class="shell">
 
-  <section id="page-home">
-    <div class="hero">
-      <p class="eyebrow">Dein persönlicher Lernraum</p>
-      <h1>Wissen, <em>das bleibt.</em></h1>
-      <p class="intro">Verstehe Zusammenhänge, vertiefe dein Wissen und gestalte deinen eigenen Lernweg.</p>
-    </div>
+<!-- ÜBERSICHT -->
+<section id="page-home">
+  <div class="hero">
+    <p class="eyebrow">Dein persönlicher Lernraum</p>
+    <h1>Wissen, <em>das bleibt.</em></h1>
+    <p class="intro">Verstehe Zusammenhänge, vertiefe dein Wissen und gestalte deinen eigenen Lernweg.</p>
+  </div>
 
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">Deine Lernumgebung</p>
-        <h2>Entdecke ATELIER</h2>
+  <div class="section-heading">
+    <div><p class="eyebrow">Deine Lernumgebung</p><h2>Entdecke ATELIER</h2></div>
+  </div>
+
+  <div class="grid">
+    <button class="tile sand" data-open="learning"><h3>Lernstudio</h3><p>Karteikarten, Quiz und Lückentexte</p></button>
+    <button class="tile sage" data-open="exams"><h3>Probeprüfungen</h3><p>Prüfungssituationen simulieren und auswerten</p></button>
+    <button class="tile terra" data-open="writing"><h3>Schreibatelier</h3><p>Texte entwickeln und verbessern</p></button>
+    <button class="tile blue" data-open="materials"><h3>Wissensbasis</h3><p>Deine Unterrichtsmaterialien</p></button>
+    <button class="tile sage" data-open="model"><h3>Lokale KI</h3><p>Dein Modell und Gerätestatus</p></button>
+    <button class="tile sand" data-open="learning"><h3>Lernassistent</h3><p>Individuelle fachliche Unterstützung</p></button>
+  </div>
+</section>
+
+<!-- LERNSTUDIO -->
+<section id="page-learning" class="hidden">
+  <div class="hero">
+    <p class="eyebrow">ATELIER · Lernstudio</p>
+    <h1>Dein Wissen, <em>dein Rhythmus.</em></h1>
+    <p class="intro">Erstelle individuelle Lernübungen auf Grundlage deiner Unterrichtsmaterialien.</p>
+  </div>
+
+  <div class="grid">
+    <button class="tile sand" data-format="flashcards"><h3>Karteikarten</h3><p>Fragen und Antworten trainieren</p></button>
+    <button class="tile sage" data-format="multipleChoice"><h3>Multiple Choice</h3><p>Wissen überprüfen</p></button>
+    <button class="tile terra" data-format="cloze"><h3>Lückentexte</h3><p>Begriffe und Zusammenhänge festigen</p></button>
+  </div>
+
+  <div class="panel">
+    <p class="eyebrow">Übungen erstellen</p>
+    <h2 id="formatTitle">Wähle ein Lernformat</h2>
+    <p id="formatDescription" class="muted">Wähle oben eine Lernmethode aus.</p>
+
+    <div class="form-grid" style="margin-top:22px">
+      <div class="field"><label for="subject">Schulfach</label><select id="subject"></select></div>
+      <div class="field"><label for="level">Schwierigkeitsgrad</label>
+        <select id="level"><option value="grundlegend">Grundlegend</option><option value="mittel">Mittel</option><option value="anspruchsvoll">Anspruchsvoll</option></select>
       </div>
     </div>
+    <div class="field"><label for="topic">Thema oder Lerngebiet</label><input id="topic" placeholder="z. B. Zellatmung oder Integralrechnung"></div>
+    <div class="field"><label for="count">Anzahl der Übungen</label><select id="count"><option value="3">3 Übungen</option><option value="5">5 Übungen</option><option value="8" selected>8 Übungen</option><option value="10">10 Übungen</option><option value="12">12 Übungen</option></select></div>
+    <div class="field"><label><input type="checkbox" id="useMaterials" checked style="width:auto"> Eigene Unterrichtsmaterialien berücksichtigen</label></div>
+    <button class="button" id="generate">Lernübungen erstellen</button>
+    <div id="generationStatus" class="status">Wähle ein Format und gib dein Thema ein.</div>
+  </div>
 
-    <div class="grid">
-      <button class="tile sand" data-open="learning">
-        <h3>Lernstudio</h3>
-        <p>Karteikarten, Quiz und Lückentexte</p>
-      </button>
-      <button class="tile sage" data-open="learning">
-        <h3>Lernassistent</h3>
-        <p>Individuelle fachliche Unterstützung</p>
-      </button>
-      <button class="tile terra" data-open="materials">
-        <h3>Wissensbasis</h3>
-        <p>Deine persönlichen Unterrichtsmaterialien</p>
-      </button>
-      <button class="tile blue" data-open="model">
-        <h3>Lokale KI</h3>
-        <p>Dein Modell und Gerätestatus</p>
-      </button>
-      <button class="tile sage" data-open="learning">
-        <h3>Probeprüfungen</h3>
-        <p>Wissen gezielt überprüfen</p>
-      </button>
-      <button class="tile sand" data-open="learning">
-        <h3>Schreibatelier</h3>
-        <p>Texte entwickeln und verbessern</p>
-      </button>
-    </div>
-  </section>
+  <div id="exerciseArea" class="panel hidden">
+    <div class="section-heading"><div><p class="eyebrow">Deine Lerneinheit</p><h2 id="exerciseHeading">Übungen</h2></div><span id="exerciseCounter" class="muted"></span></div>
+    <div class="progress-track"><div class="progress-fill" id="exerciseProgress"></div></div>
+    <div id="exerciseContent"></div>
+    <div class="button-row"><button class="button secondary" id="previousExercise">Zurück</button><button class="button" id="nextExercise">Weiter</button></div>
+    <div id="exerciseSummary" class="status hidden"></div>
+  </div>
+</section>
 
-  <section id="page-learning" class="hidden">
-    <div class="hero">
-      <p class="eyebrow">ATELIER · Lernstudio</p>
-      <h1>Dein Wissen, <em>dein Rhythmus.</em></h1>
-      <p class="intro">Erstelle individuelle Lernübungen auf Grundlage deiner Unterrichtsmaterialien.</p>
-    </div>
+<!-- PROBEPRÜFUNGEN -->
+<section id="page-exams" class="hidden">
+  <div class="hero">
+    <p class="eyebrow">ATELIER · Prüfungstraining</p>
+    <h1>Bereit für die <em>Prüfung?</em></h1>
+    <p class="intro">Erstelle eine individuelle Prüfungssimulation und überprüfe anschließend deinen Lernstand.</p>
+  </div>
 
-    <div class="grid">
-      <button class="tile sand" data-format="flashcards">
-        <h3>Karteikarten</h3>
-        <p>Fragen und Antworten trainieren</p>
-      </button>
-      <button class="tile sage" data-format="multipleChoice">
-        <h3>Multiple Choice</h3>
-        <p>Wissen überprüfen und verstehen</p>
-      </button>
-      <button class="tile terra" data-format="cloze">
-        <h3>Lückentexte</h3>
-        <p>Begriffe und Zusammenhänge festigen</p>
-      </button>
-    </div>
+  <div class="panel">
+    <p class="eyebrow">Prüfung konfigurieren</p>
+    <h2>Deine Prüfung</h2>
 
-    <div class="panel">
-      <p class="eyebrow">Übungen erstellen</p>
-      <h2 id="formatTitle">Wähle ein Lernformat</h2>
-      <p id="formatDescription" class="muted">Wähle oben eine Lernmethode aus.</p>
-
-      <div class="form-grid" style="margin-top:22px">
-        <div class="field">
-          <label for="subject">Schulfach</label>
-          <select id="subject">
-            <option>Mathematik</option><option>Deutsch</option>
-            <option>Geographie</option><option>Chemie</option>
-            <option>Musik</option><option>Sport</option>
-            <option>Spanisch</option><option>Englisch</option>
-            <option>Evangelische Religion</option><option>Biologie</option>
-            <option>Politik und Gesellschaft</option><option>Geschichte</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="level">Schwierigkeitsgrad</label>
-          <select id="level">
-            <option value="grundlegend">Grundlegend</option>
-            <option value="mittel">Mittel</option>
-            <option value="anspruchsvoll">Anspruchsvoll</option>
-          </select>
-        </div>
+    <div class="form-grid" style="margin-top:22px">
+      <div class="field"><label for="examSubject">Schulfach</label><select id="examSubject"></select></div>
+      <div class="field"><label for="examLevel">Anforderungsniveau</label>
+        <select id="examLevel"><option value="grundlegend">Grundlegend</option><option value="mittel">Mittel</option><option value="anspruchsvoll">Anspruchsvoll</option></select>
       </div>
-
-      <div class="field">
-        <label for="topic">Thema oder Lerngebiet</label>
-        <input id="topic" placeholder="z. B. Zellatmung, Integralrechnung, Weimarer Republik">
-      </div>
-
-      <div class="field">
-        <label for="count">Anzahl der Übungen</label>
-        <select id="count">
-          <option value="3">3 Übungen</option>
-          <option value="5">5 Übungen</option>
-          <option value="8" selected>8 Übungen</option>
-          <option value="10">10 Übungen</option>
-          <option value="12">12 Übungen</option>
+      <div class="field"><label for="examType">Prüfungsformat</label>
+        <select id="examType">
+          <option value="gemischt">Gemischte Prüfung</option>
+          <option value="wissen">Wissensfragen</option>
+          <option value="analyse">Analyse und Interpretation</option>
+          <option value="transfer">Transferaufgaben</option>
+          <option value="klausur">Klausuraufgaben</option>
         </select>
       </div>
-
-      <div class="field">
-        <label>
-          <input type="checkbox" id="useMaterials" checked style="width:auto">
-          Eigene Unterrichtsmaterialien berücksichtigen
-        </label>
-        <p class="muted">Gespeicherte Materialien des ausgewählten Fachs werden berücksichtigt.</p>
+      <div class="field"><label for="examCount">Anzahl der Aufgaben</label>
+        <select id="examCount"><option value="3">3 Aufgaben</option><option value="5" selected>5 Aufgaben</option><option value="8">8 Aufgaben</option></select>
       </div>
-
-      <button class="button" id="generate">Lernübungen erstellen</button>
-      <div id="generationStatus" class="status" aria-live="polite">Wähle ein Format und gib dein Thema ein.</div>
     </div>
 
-    <div id="exerciseArea" class="panel hidden">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Deine Lerneinheit</p>
-          <h2 id="exerciseHeading">Übungen</h2>
-        </div>
-        <span class="muted" id="exerciseCounter"></span>
-      </div>
-      <div class="progress-track"><div class="progress-fill" id="exerciseProgress"></div></div>
-      <div id="exerciseContent"></div>
-      <div class="button-row">
-        <button class="button secondary" id="previousExercise">Zurück</button>
-        <button class="button" id="nextExercise">Weiter</button>
-      </div>
-      <div id="exerciseSummary" class="status hidden"></div>
-    </div>
-  </section>
+    <div class="field"><label for="examTopic">Prüfungsthema</label><input id="examTopic" placeholder="z. B. Genetik, Französische Revolution"></div>
+    <div class="field"><label for="examMaterials"><input type="checkbox" id="examMaterials" checked style="width:auto"> Eigene Materialien berücksichtigen</label></div>
+    <button class="button" id="createExam">Prüfung erstellen</button>
+    <div id="examStatus" class="status">Lege deine Prüfung fest.</div>
+  </div>
 
-  <section id="page-materials" class="hidden">
-    <div class="hero">
-      <p class="eyebrow">Deine Wissensbasis</p>
-      <h1>Deine Materialien, <em>dein Wissen.</em></h1>
-      <p class="intro">Importiere Unterrichtsmaterialien und nutze sie als Grundlage für deine persönlichen Lernübungen.</p>
+  <div id="examArea" class="panel hidden">
+    <div class="section-heading"><div><p class="eyebrow">Prüfungssimulation</p><h2 id="examHeading">Deine Prüfung</h2></div><span id="examCounter" class="muted"></span></div>
+    <div class="progress-track"><div class="progress-fill" id="examProgress"></div></div>
+    <div id="examQuestions"></div>
+    <div class="button-row">
+      <button class="button secondary" id="examPrevious">Zurück</button>
+      <button class="button" id="examNext">Nächste Aufgabe</button>
     </div>
+    <div id="examResult" class="status hidden"></div>
+  </div>
+</section>
 
-    <div class="panel">
-      <h2>Material importieren</h2>
-      <p class="muted">Unterstützt werden PDF und TXT.</p>
-      <div class="field">
-        <label for="materialSubject">Schulfach</label>
-        <select id="materialSubject">
-          <option>Mathematik</option><option>Deutsch</option>
-          <option>Geographie</option><option>Chemie</option>
-          <option>Musik</option><option>Sport</option>
-          <option>Spanisch</option><option>Englisch</option>
-          <option>Evangelische Religion</option><option>Biologie</option>
-          <option>Politik und Gesellschaft</option><option>Geschichte</option>
+<!-- SCHREIBATELIER -->
+<section id="page-writing" class="hidden">
+  <div class="hero">
+    <p class="eyebrow">ATELIER · Schreibatelier</p>
+    <h1>Gedanken werden <em>Texte.</em></h1>
+    <p class="intro">Entwickle eigene Texte, arbeite mit fachlichen Kriterien und erhalte differenziertes Feedback.</p>
+  </div>
+
+  <div class="panel">
+    <p class="eyebrow">Schreibprojekt</p>
+    <h2>Dein Schreibauftrag</h2>
+
+    <div class="form-grid" style="margin-top:22px">
+      <div class="field"><label for="writingSubject">Schulfach</label><select id="writingSubject"></select></div>
+      <div class="field"><label for="writingType">Textsorte</label>
+        <select id="writingType">
+          <option>Erörterung</option>
+          <option>Analyse</option>
+          <option>Interpretation</option>
+          <option>Kommentar</option>
+          <option>Zusammenfassung</option>
+          <option>Essay</option>
+          <option>Fachlicher Bericht</option>
+          <option>Freie Ausarbeitung</option>
         </select>
       </div>
-      <div class="field">
-        <label for="materialFile">Datei auswählen</label>
-        <input type="file" id="materialFile" accept=".pdf,.txt,application/pdf,text/plain">
-      </div>
-      <button class="button" id="importMaterial">Material importieren</button>
-      <div id="materialStatus" class="status">Noch keine Datei importiert.</div>
     </div>
 
-    <div class="panel">
-      <div class="section-heading">
-        <h2>Gespeicherte Inhalte</h2>
-        <button class="button secondary" id="refreshMaterials">Aktualisieren</button>
-      </div>
-      <div id="materialList" class="muted">Materialien werden geladen ...</div>
+    <div class="field"><label for="writingTopic">Thema oder Aufgabenstellung</label><textarea id="writingTopic" placeholder="Beschreibe deinen Schreibauftrag oder füge die Aufgabenstellung ein."></textarea></div>
+    <div class="field"><label for="writingLevel">Anspruchsniveau</label>
+      <select id="writingLevel"><option value="grundlegend">Grundlegend</option><option value="mittel">Mittel</option><option value="anspruchsvoll">Anspruchsvoll</option></select>
     </div>
-  </section>
+    <div class="field"><label for="writingMaterials"><input type="checkbox" id="writingMaterials" checked style="width:auto"> Eigene Unterrichtsmaterialien berücksichtigen</label></div>
+    <div class="button-row">
+      <button class="button" id="createOutline">Gliederung erstellen</button>
+      <button class="button secondary" id="writingHelp">Schreibberatung erhalten</button>
+    </div>
+    <div id="writingStatus" class="status">Formuliere deinen Schreibauftrag.</div>
+    <div id="writingResult" class="result-text hidden"></div>
+  </div>
 
-  <section id="page-model" class="hidden">
-    <div class="hero">
-      <p class="eyebrow">Lokale KI</p>
-      <h1>Dein Modell, <em>deine Kontrolle.</em></h1>
-      <p class="intro">ATELIER AI verarbeitet deine Lernanfragen lokal über WebLLM und WebGPU.</p>
+  <div class="panel">
+    <p class="eyebrow">Textwerkstatt</p>
+    <h2>Dein eigener Entwurf</h2>
+    <p class="muted">Füge deinen Text ein und lass ihn anhand fachlicher Kriterien prüfen.</p>
+    <div class="field" style="margin-top:18px"><label for="draftText">Dein Text</label><textarea id="draftText" style="min-height:220px" placeholder="Beginne hier mit deinem Text ..."></textarea></div>
+    <div class="button-row">
+      <button class="button" id="reviewDraft">Text analysieren</button>
+      <button class="button secondary" id="improveDraft">Überarbeitungsvorschläge</button>
     </div>
+    <div id="reviewStatus" class="status">Dein Text bleibt zunächst in diesem Browser.</div>
+    <div id="reviewResult" class="result-text hidden"></div>
+  </div>
+</section>
 
-    <div class="panel">
-      <p class="eyebrow">Gerätestatus</p>
-      <h2>WebGPU</h2>
-      <div id="gpuStatus" class="status">WebGPU wird geprüft ...</div>
-    </div>
+<!-- MATERIALIEN -->
+<section id="page-materials" class="hidden">
+  <div class="hero">
+    <p class="eyebrow">Deine Wissensbasis</p>
+    <h1>Deine Materialien, <em>dein Wissen.</em></h1>
+    <p class="intro">Importiere Unterrichtsmaterialien und nutze sie für deine Lernprojekte.</p>
+  </div>
+  <div class="panel">
+    <h2>Material importieren</h2>
+    <p class="muted">Unterstützt werden PDF und TXT.</p>
+    <div class="field"><label for="materialSubject">Schulfach</label><select id="materialSubject"></select></div>
+    <div class="field"><label for="materialFile">Datei auswählen</label><input type="file" id="materialFile" accept=".pdf,.txt,application/pdf,text/plain"></div>
+    <button class="button" id="importMaterial">Material importieren</button>
+    <div id="materialStatus" class="status">Noch keine Datei importiert.</div>
+  </div>
+  <div class="panel">
+    <div class="section-heading"><h2>Gespeicherte Inhalte</h2><button class="button secondary" id="refreshMaterials">Aktualisieren</button></div>
+    <div id="materialList" class="muted">Materialien werden geladen ...</div>
+  </div>
+</section>
 
-    <div class="panel">
-      <p class="eyebrow">Modellverwaltung</p>
-      <h2>Lokales KI-Modell</h2>
-      <div class="field" style="margin-top:20px">
-        <label for="model">KI-Modell auswählen</label>
-        <select id="model" disabled>
-          <option value="">Modellliste noch nicht geladen</option>
-        </select>
-      </div>
-      <div class="button-row">
-        <button id="loadModels" class="button secondary">Modelle suchen</button>
-        <button id="loadModel" class="button" disabled>Modell laden</button>
-        <button id="unloadModel" class="button secondary" disabled>Entladen</button>
-      </div>
-      <progress id="progress" value="0" max="100" style="width:100%;margin-top:20px"></progress>
-      <div id="modelStatus" class="status">Noch kein Modell geladen.</div>
+<!-- KI-MODELL -->
+<section id="page-model" class="hidden">
+  <div class="hero">
+    <p class="eyebrow">Lokale KI</p>
+    <h1>Dein Modell, <em>deine Kontrolle.</em></h1>
+    <p class="intro">ATELIER AI verarbeitet deine Lernanfragen lokal über WebLLM und WebGPU.</p>
+  </div>
+  <div class="panel"><p class="eyebrow">Gerätestatus</p><h2>WebGPU</h2><div id="gpuStatus" class="status">WebGPU wird geprüft ...</div></div>
+  <div class="panel">
+    <p class="eyebrow">Modellverwaltung</p><h2>Lokales KI-Modell</h2>
+    <div class="field" style="margin-top:20px"><label for="model">KI-Modell auswählen</label><select id="model" disabled><option value="">Modellliste noch nicht geladen</option></select></div>
+    <div class="button-row">
+      <button id="loadModels" class="button secondary">Modelle suchen</button>
+      <button id="loadModel" class="button" disabled>Modell laden</button>
+      <button id="unloadModel" class="button secondary" disabled>Entladen</button>
     </div>
-  </section>
+    <progress id="progress" value="0" max="100" style="width:100%;margin-top:20px"></progress>
+    <div id="modelStatus" class="status">Noch kein Modell geladen.</div>
+  </div>
+</section>
 
 </main>
 
-<footer>
-  <div class="shell">ATELIER AI · Independent Learning Space · Gymnasium Bayern</div>
-</footer>
+<footer><div class="shell">ATELIER AI · Independent Learning Space · Gymnasium Bayern</div></footer>
 
-<!-- Navigation funktioniert unabhängig von den KI-Modulen -->
+<!-- Unabhängige Navigation -->
 <script>
-(function () {
-  function showPage(name) {
-    document.querySelectorAll("main > section").forEach(section => {
-      section.classList.add("hidden");
-    });
-
-    const target = document.getElementById("page-" + name);
-    if (target) target.classList.remove("hidden");
-
-    document.querySelectorAll("nav button").forEach(button => {
-      button.classList.toggle("active", button.dataset.page === name);
-    });
-
-    window.scrollTo(0, 0);
-
-    if (name === "materials" && window.refreshAtelierMaterials) {
-      window.refreshAtelierMaterials();
-    }
+(function(){
+  function showPage(name){
+    document.querySelectorAll("main > section").forEach(section=>section.classList.add("hidden"));
+    const target=document.getElementById("page-"+name);
+    if(target)target.classList.remove("hidden");
+    document.querySelectorAll("nav button").forEach(button=>button.classList.toggle("active",button.dataset.page===name));
+    window.scrollTo(0,0);
+    if(name==="materials"&&window.refreshAtelierMaterials)window.refreshAtelierMaterials();
   }
-
-  document.addEventListener("click", function (event) {
-    const pageButton = event.target.closest("[data-page]");
-    const openButton = event.target.closest("[data-open]");
-
-    if (pageButton) showPage(pageButton.dataset.page);
-    if (openButton) showPage(openButton.dataset.open);
+  document.addEventListener("click",function(event){
+    const page=event.target.closest("[data-page]");
+    const open=event.target.closest("[data-open]");
+    if(page)showPage(page.dataset.page);
+    if(open)showPage(open.dataset.open);
   });
 })();
 </script>
 
-<!-- KI-Funktionen -->
+<!-- Anwendungslogik -->
 <script type="module">
-const errorDisplay = document.getElementById("errorDisplay");
+const errorDisplay=document.getElementById("errorDisplay");
 
-window.addEventListener("error", event => {
+window.addEventListener("error",event=>{
   errorDisplay.classList.remove("hidden");
-  errorDisplay.textContent = "JavaScript-Fehler: " + event.message;
+  errorDisplay.textContent="JavaScript-Fehler: "+event.message;
+});
+window.addEventListener("unhandledrejection",event=>{
+  errorDisplay.classList.remove("hidden");
+  errorDisplay.textContent="Modulfehler: "+String(event.reason);
 });
 
-window.addEventListener("unhandledrejection", event => {
-  errorDisplay.classList.remove("hidden");
-  errorDisplay.textContent = "Modulfehler: " + String(event.reason);
+try{
+const [{atelierAI},{learningStudio},{materialImporter},{knowledgeBase}]=await Promise.all([
+  import("./src/core/ai.js"),
+  import("./src/core/learning-studio.js"),
+  import("./src/core/material-import.js"),
+  import("./src/core/knowledge.js")
+]);
+
+const $=id=>document.getElementById(id);
+const subjects=["Mathematik","Deutsch","Geographie","Chemie","Musik","Sport","Spanisch","Englisch","Evangelische Religion","Biologie","Politik und Gesellschaft","Geschichte"];
+
+["subject","examSubject","writingSubject","materialSubject"].forEach(id=>{
+  $(id).replaceChildren(...subjects.map(subject=>{
+    const option=document.createElement("option");
+    option.value=subject;
+    option.textContent=subject;
+    return option;
+  }));
 });
 
-try {
-  const [
-    { atelierAI },
-    { learningStudio },
-    { materialImporter },
-    { knowledgeBase }
-  ] = await Promise.all([
-    import("./src/core/ai.js"),
-    import("./src/core/learning-studio.js"),
-    import("./src/core/material-import.js"),
-    import("./src/core/knowledge.js")
-  ]);
+async function askAI({subject,mode,question,level="mittel",materials=true}){
+  if(!atelierAI.getStatus().localModel.ready)throw new Error("Bitte zuerst unter KI-Modell ein lokales Modell laden.");
+  const context=materials?await knowledgeBase.search(question,subject):[];
+  const request=atelierAI.createRequest({subject,mode,question,materials:context,grade:12,level});
+  const response=await atelierAI.ask(request);
+  if(response.status==="offline")throw new Error(response.message||"Das KI-Modell ist nicht verfügbar.");
+  const answer=response.answer||response.text||response.output;
+  if(typeof answer!=="string")throw new Error("Die KI hat keine lesbare Antwort zurückgegeben.");
+  return answer;
+}
 
-  const $ = id => document.getElementById(id);
+function setStatus(id,message,type=""){
+  $(id).textContent=message;
+  $(id).className="status"+(type?" "+type:"");
+}
 
-  let selectedFormat = null;
-  let currentSet = null;
-  let currentIndex = 0;
-  let revealed = false;
-  let selectedAnswers = {};
-  let completed = {};
+function showResult(id,text){
+  $(id).textContent=text;
+  $(id).classList.remove("hidden");
+}
 
-  const formatDetails = {
-    flashcards: {
-      title: "Karteikarten",
-      description: "Lerne mit präzisen Fragen und verständlichen Antworten."
-    },
-    multipleChoice: {
-      title: "Multiple Choice",
-      description: "Überprüfe dein Wissen mit vier Antwortmöglichkeiten."
-    },
-    cloze: {
-      title: "Lückentexte",
-      description: "Ergänze fehlende Begriffe und Zusammenhänge."
-    }
-  };
+/* LERNSTUDIO */
+let selectedFormat=null,currentSet=null,currentIndex=0,revealed=false,selectedAnswers={},completed={};
 
-  document.querySelectorAll("[data-format]").forEach(button => {
-    button.addEventListener("click", () => {
-      selectedFormat = button.dataset.format;
-      $("formatTitle").textContent = formatDetails[selectedFormat].title;
-      $("formatDescription").textContent = formatDetails[selectedFormat].description;
-      $("generationStatus").textContent = "Format ausgewählt: " + formatDetails[selectedFormat].title;
+const formatDetails={
+  flashcards:{title:"Karteikarten",description:"Lerne mit präzisen Fragen und verständlichen Antworten."},
+  multipleChoice:{title:"Multiple Choice",description:"Überprüfe dein Wissen mit vier Antwortmöglichkeiten."},
+  cloze:{title:"Lückentexte",description:"Ergänze fehlende Begriffe und Zusammenhänge."}
+};
 
-      document.querySelectorAll("[data-format]").forEach(tile => {
-        tile.style.outline = tile.dataset.format === selectedFormat
-          ? "2px solid #857866" : "none";
-      });
+document.querySelectorAll("[data-format]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    selectedFormat=button.dataset.format;
+    $("formatTitle").textContent=formatDetails[selectedFormat].title;
+    $("formatDescription").textContent=formatDetails[selectedFormat].description;
+    setStatus("generationStatus","Format ausgewählt: "+formatDetails[selectedFormat].title);
+    document.querySelectorAll("[data-format]").forEach(tile=>{
+      tile.style.outline=tile.dataset.format===selectedFormat?"2px solid #857866":"none";
     });
   });
+});
 
-  async function refreshMaterials() {
-    const list = $("materialList");
-    list.replaceChildren();
-
-    try {
-      const materials = await knowledgeBase.getAll($("materialSubject").value);
-
-      if (!materials.length) {
-        list.textContent = "Für dieses Fach sind noch keine Materialien gespeichert.";
-        return;
-      }
-
-      materials.forEach(material => {
-        const item = document.createElement("div");
-        item.className = "material-item";
-
-        const title = document.createElement("strong");
-        title.textContent = material.title;
-
-        const detail = document.createElement("p");
-        detail.className = "muted";
-        detail.textContent = material.subject + " · " + (material.content || "").length + " Zeichen";
-
-        const remove = document.createElement("button");
-        remove.className = "button secondary";
-        remove.textContent = "Löschen";
-        remove.style.marginTop = "8px";
-
-        remove.addEventListener("click", async () => {
-          if (!confirm("Dieses Material wirklich löschen?")) return;
-          await knowledgeBase.remove(material.id);
-          refreshMaterials();
-        });
-
-        item.append(title, detail, remove);
-        list.appendChild(item);
-      });
-    } catch (error) {
-      list.textContent = "Fehler: " + error.message;
-    }
-  }
-
-  window.refreshAtelierMaterials = refreshMaterials;
-  $("refreshMaterials").addEventListener("click", refreshMaterials);
-  $("materialSubject").addEventListener("change", refreshMaterials);
-
-  $("importMaterial").addEventListener("click", async () => {
-    const file = $("materialFile").files[0];
-
-    if (!file) {
-      $("materialStatus").textContent = "Bitte zuerst eine Datei auswählen.";
-      return;
-    }
-
-    $("importMaterial").disabled = true;
-    $("materialStatus").textContent = "Datei wird verarbeitet ...";
-
-    try {
-      const material = await materialImporter.importFile(file);
-
-      await knowledgeBase.add({
-        subject: $("materialSubject").value,
-        title: material.title,
-        content: material.content,
-        source: "Lokaler Dateiimport"
-      });
-
-      $("materialStatus").textContent = "Material erfolgreich gespeichert.";
-      $("materialStatus").className = "status success";
-      $("materialFile").value = "";
-      await refreshMaterials();
-    } catch (error) {
-      $("materialStatus").textContent = "Import fehlgeschlagen: " + error.message;
-      $("materialStatus").className = "status error";
-    } finally {
-      $("importMaterial").disabled = false;
-    }
-  });
-
-  $("generate").addEventListener("click", async () => {
-    if (!selectedFormat) {
-      $("generationStatus").textContent = "Bitte zuerst ein Lernformat auswählen.";
-      return;
-    }
-
-    const topic = $("topic").value.trim();
-
-    if (!topic) {
-      $("generationStatus").textContent = "Bitte ein Thema eingeben.";
-      return;
-    }
-
-    $("generate").disabled = true;
-    $("generationStatus").className = "status";
-    $("generationStatus").textContent = "Die KI erstellt deine Übungen. Das kann etwas dauern ...";
-
-    try {
-      currentSet = await learningStudio.generate({
-        format: selectedFormat,
-        subject: $("subject").value,
-        topic,
-        count: Number($("count").value),
-        level: $("level").value,
-        useMaterials: $("useMaterials").checked
-      });
-
-      currentIndex = 0;
-      revealed = false;
-      selectedAnswers = {};
-      completed = {};
-
-      $("generationStatus").textContent =
-        currentSet.items.length + " Übungen wurden erstellt. " +
-        currentSet.materialCount + " passende Materialien berücksichtigt.";
-      $("generationStatus").className = "status success";
-
-      $("exerciseArea").classList.remove("hidden");
-      $("exerciseHeading").textContent = formatDetails[selectedFormat].title;
-      $("nextExercise").disabled = false;
-      renderExercise();
-
-      $("exerciseArea").scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (error) {
-      $("generationStatus").textContent = "Fehler: " + error.message;
-      $("generationStatus").className = "status error";
-    } finally {
-      $("generate").disabled = false;
-    }
-  });
-
-  function renderExercise() {
-    if (!currentSet) return;
-
-    const item = currentSet.items[currentIndex];
-    const area = $("exerciseContent");
-    area.replaceChildren();
-
-    $("exerciseCounter").textContent = (currentIndex + 1) + " / " + currentSet.items.length;
-    $("exerciseProgress").style.width = ((currentIndex + 1) / currentSet.items.length * 100) + "%";
-    $("previousExercise").disabled = currentIndex === 0;
-    $("nextExercise").textContent = currentIndex === currentSet.items.length - 1
-      ? "Einheit abschließen" : "Weiter";
-    $("exerciseSummary").classList.add("hidden");
-
-    if (currentSet.format === "flashcards") renderFlashcard(item, area);
-    if (currentSet.format === "multipleChoice") renderMultipleChoice(item, area);
-    if (currentSet.format === "cloze") renderCloze(item, area);
-  }
-
-  function renderFlashcard(item, area) {
-    const card = document.createElement("div");
-    card.className = "flashcard";
-
-    const content = document.createElement("div");
-    const text = document.createElement("p");
-    text.textContent = revealed ? item.answer : item.question;
-
-    const hint = document.createElement("small");
-    hint.textContent = revealed ? "Antwort · Weiter zum nächsten Schritt" : "Frage · Zum Aufdecken antippen";
-
-    content.append(text, hint);
-    card.appendChild(content);
-
-    card.addEventListener("click", () => {
-      revealed = !revealed;
-      renderExercise();
+$("generate").addEventListener("click",async()=>{
+  if(!selectedFormat){setStatus("generationStatus","Bitte zuerst ein Lernformat auswählen.","error");return;}
+  const topic=$("topic").value.trim();
+  if(!topic){setStatus("generationStatus","Bitte ein Thema eingeben.","error");return;}
+  $("generate").disabled=true;
+  setStatus("generationStatus","Die KI erstellt deine Übungen. Das kann etwas dauern ...");
+  try{
+    currentSet=await learningStudio.generate({
+      format:selectedFormat,subject:$("subject").value,topic,
+      count:Number($("count").value),level:$("level").value,
+      useMaterials:$("useMaterials").checked
     });
+    currentIndex=0;revealed=false;selectedAnswers={};completed={};
+    setStatus("generationStatus",currentSet.items.length+" Übungen erstellt. "+currentSet.materialCount+" Materialien berücksichtigt.","success");
+    $("exerciseArea").classList.remove("hidden");
+    $("exerciseHeading").textContent=formatDetails[selectedFormat].title;
+    $("nextExercise").disabled=false;
+    renderExercise();
+    $("exerciseArea").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(error){setStatus("generationStatus","Fehler: "+error.message,"error");}
+  finally{$("generate").disabled=false;}
+});
 
-    area.appendChild(card);
+function renderExercise(){
+  if(!currentSet)return;
+  const item=currentSet.items[currentIndex],area=$("exerciseContent");
+  area.replaceChildren();
+  $("exerciseCounter").textContent=(currentIndex+1)+" / "+currentSet.items.length;
+  $("exerciseProgress").style.width=((currentIndex+1)/currentSet.items.length*100)+"%";
+  $("previousExercise").disabled=currentIndex===0;
+  $("nextExercise").textContent=currentIndex===currentSet.items.length-1?"Einheit abschließen":"Weiter";
+  $("exerciseSummary").classList.add("hidden");
+  if(currentSet.format==="flashcards")renderFlashcard(item,area);
+  if(currentSet.format==="multipleChoice")renderMultipleChoice(item,area);
+  if(currentSet.format==="cloze")renderCloze(item,area);
+}
 
-    if (revealed && !completed[currentIndex]) {
-      const button = document.createElement("button");
-      button.className = "button soft";
-      button.textContent = "Als gelernt markieren";
-      button.addEventListener("click", () => {
-        completed[currentIndex] = true;
-        button.textContent = "Als gelernt markiert";
-        button.disabled = true;
-      });
-      area.appendChild(button);
-    }
+function renderFlashcard(item,area){
+  const card=document.createElement("div");card.className="flashcard";
+  const content=document.createElement("div"),text=document.createElement("p"),hint=document.createElement("small");
+  text.textContent=revealed?item.answer:item.question;
+  hint.textContent=revealed?"Antwort · Weiter zum nächsten Schritt":"Frage · Zum Aufdecken antippen";
+  content.append(text,hint);card.append(content);
+  card.addEventListener("click",()=>{revealed=!revealed;renderExercise();});
+  area.append(card);
+  if(revealed&&!completed[currentIndex]){
+    const button=document.createElement("button");button.className="button soft";button.textContent="Als gelernt markieren";
+    button.addEventListener("click",()=>{completed[currentIndex]=true;button.disabled=true;button.textContent="Als gelernt markiert";});
+    area.append(button);
   }
+}
 
-  function renderMultipleChoice(item, area) {
-    const question = document.createElement("div");
-    question.className = "exercise-question";
-    question.textContent = item.question;
-    area.appendChild(question);
+function renderMultipleChoice(item,area){
+  const question=document.createElement("div");question.className="exercise-question";question.textContent=item.question;area.append(question);
+  item.options.forEach((option,index)=>{
+    const button=document.createElement("button");button.className="answer";button.textContent=option;
+    if(selectedAnswers[currentIndex]===index)button.classList.add("selected");
+    if(completed[currentIndex]){
+      button.disabled=true;
+      if(index===item.correctIndex)button.classList.add("correct");
+      else if(selectedAnswers[currentIndex]===index)button.classList.add("wrong");
+    }
+    button.addEventListener("click",()=>{if(completed[currentIndex])return;selectedAnswers[currentIndex]=index;completed[currentIndex]=true;renderExercise();});
+    area.append(button);
+  });
+  if(completed[currentIndex]){
+    const feedback=document.createElement("div");feedback.className="feedback";
+    feedback.textContent=(selectedAnswers[currentIndex]===item.correctIndex?"Richtig. ":"Nicht richtig. ")+item.explanation;
+    area.append(feedback);
+  }
+}
 
-    item.options.forEach((option, index) => {
-      const button = document.createElement("button");
-      button.className = "answer";
-      button.textContent = option;
-
-      if (selectedAnswers[currentIndex] === index) button.classList.add("selected");
-
-      if (completed[currentIndex]) {
-        button.disabled = true;
-        if (index === item.correctIndex) button.classList.add("correct");
-        else if (selectedAnswers[currentIndex] === index) button.classList.add("wrong");
-      }
-
-      button.addEventListener("click", () => {
-        if (completed[currentIndex]) return;
-        selectedAnswers[currentIndex] = index;
-        completed[currentIndex] = true;
-        renderExercise();
-      });
-
-      area.appendChild(button);
+function renderCloze(item,area){
+  const container=document.createElement("div");container.className="exercise-question";
+  const parts=item.text.split("{{LUECKE}}"),inputs=[];
+  parts.forEach((part,index)=>{
+    container.append(document.createTextNode(part));
+    if(index<item.answers.length){
+      const input=document.createElement("input");input.placeholder="Deine Lösung";input.style.width="auto";input.style.minWidth="110px";input.style.maxWidth="190px";input.style.margin="5px";
+      input.disabled=Boolean(completed[currentIndex]);
+      if(completed[currentIndex])input.value=selectedAnswers[currentIndex]?.[index]||"";
+      inputs.push(input);container.append(input);
+    }
+  });
+  area.append(container);
+  if(!completed[currentIndex]){
+    const check=document.createElement("button");check.className="button";check.textContent="Antworten überprüfen";check.style.marginTop="15px";
+    check.addEventListener("click",()=>{
+      const values=inputs.map(input=>input.value.trim());
+      if(values.some(value=>!value)){alert("Bitte alle Lücken ausfüllen.");return;}
+      selectedAnswers[currentIndex]=values;completed[currentIndex]=true;renderExercise();
     });
-
-    if (completed[currentIndex]) {
-      const feedback = document.createElement("div");
-      feedback.className = "feedback";
-      const correct = selectedAnswers[currentIndex] === item.correctIndex;
-      feedback.textContent = (correct ? "Richtig. " : "Nicht richtig. ") + item.explanation;
-      area.appendChild(feedback);
-    }
+    area.append(check);
+  }else{
+    const values=selectedAnswers[currentIndex]||[];
+    const correct=item.answers.filter((answer,index)=>answer.toLowerCase().trim()===(values[index]||"").toLowerCase().trim()).length;
+    const feedback=document.createElement("div");feedback.className="feedback";
+    feedback.textContent=correct+" von "+item.answers.length+" Lücken richtig. Lösungen: "+item.answers.join(", ")+". "+item.explanation;
+    area.append(feedback);
   }
+}
 
-  function renderCloze(item, area) {
-    const container = document.createElement("div");
-    container.className = "exercise-question";
+$("previousExercise").addEventListener("click",()=>{if(currentIndex>0){currentIndex--;revealed=false;renderExercise();}});
+$("nextExercise").addEventListener("click",()=>{
+  if(!currentSet)return;
+  if(currentIndex<currentSet.items.length-1){currentIndex++;revealed=false;renderExercise();return;}
+  $("exerciseSummary").classList.remove("hidden");
+  $("exerciseSummary").textContent="Lerneinheit beendet. "+Object.keys(completed).length+" von "+currentSet.items.length+" Übungen bearbeitet.";
+  $("nextExercise").disabled=true;$("nextExercise").textContent="Abgeschlossen";
+});
 
-    const parts = item.text.split("{{LUECKE}}");
-    const inputs = [];
+/* PROBEPRÜFUNGEN */
+let examSet=[],examIndex=0,examAnswers={},examFinished=false;
 
-    parts.forEach((part, index) => {
-      container.appendChild(document.createTextNode(part));
+$("createExam").addEventListener("click",async()=>{
+  const topic=$("examTopic").value.trim();
+  if(!topic){setStatus("examStatus","Bitte ein Prüfungsthema eingeben.","error");return;}
+  $("createExam").disabled=true;
+  setStatus("examStatus","Die Prüfung wird erstellt ...");
+  try{
+    const subject=$("examSubject").value;
+    const type=$("examType").value;
+    const count=Number($("examCount").value);
+    const level=$("examLevel").value;
+    const prompt=`Erstelle eine Probeprüfung für die gymnasiale Oberstufe in Bayern.
+Fach: ${subject}. Thema: ${topic}. Prüfungsformat: ${type}. Niveau: ${level}.
+Erstelle genau ${count} offene, fachlich anspruchsvolle Aufgaben.
+Gib ausschließlich ein JSON-Objekt im Format {"questions":[{"question":"Aufgabenstellung","criteria":"Erwartungshorizont und wichtige Bewertungskriterien"}]} zurück.
+Keine Musterlösungen direkt in den Aufgaben anzeigen.`;
 
-      if (index < item.answers.length) {
-        const input = document.createElement("input");
-        input.placeholder = "Deine Lösung";
-        input.style.width = "auto";
-        input.style.minWidth = "110px";
-        input.style.maxWidth = "190px";
-        input.style.margin = "5px";
-        input.disabled = Boolean(completed[currentIndex]);
+    const response=await askAI({subject,mode:"quiz",question:prompt,level,materials:$("examMaterials").checked});
+    const match=response.match(/\{[\s\S]*\}/);
+    if(!match)throw new Error("Die KI hat kein gültiges Aufgabenformat geliefert.");
+    const data=JSON.parse(match[0]);
+    if(!Array.isArray(data.questions)||!data.questions.length)throw new Error("Es wurden keine Aufgaben erstellt.");
+    examSet=data.questions;examIndex=0;examAnswers={};examFinished=false;
+    $("examArea").classList.remove("hidden");
+    $("examHeading").textContent=subject+" · "+topic;
+    $("examResult").classList.add("hidden");
+    $("examNext").disabled=false;
+    renderExam();
+    setStatus("examStatus",examSet.length+" Prüfungsaufgaben erstellt.","success");
+    $("examArea").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(error){setStatus("examStatus","Fehler: "+error.message,"error");}
+  finally{$("createExam").disabled=false;}
+});
 
-        if (completed[currentIndex]) {
-          input.value = selectedAnswers[currentIndex]?.[index] || "";
-        }
+function renderExam(){
+  if(!examSet.length)return;
+  $("examCounter").textContent=(examIndex+1)+" / "+examSet.length;
+  $("examProgress").style.width=((examIndex+1)/examSet.length*100)+"%";
+  $("examPrevious").disabled=examIndex===0;
+  $("examNext").textContent=examIndex===examSet.length-1?"Prüfung abgeben":"Nächste Aufgabe";
+  const area=$("examQuestions");area.replaceChildren();
+  const item=examSet[examIndex];
+  const title=document.createElement("div");title.className="exercise-question";title.textContent="Aufgabe "+(examIndex+1)+": "+item.question;
+  const input=document.createElement("textarea");input.style.minHeight="180px";input.placeholder="Deine Antwort ...";input.value=examAnswers[examIndex]||"";
+  input.addEventListener("input",()=>{examAnswers[examIndex]=input.value;});
+  area.append(title,input);
+}
 
-        inputs.push(input);
-        container.appendChild(input);
-      }
+$("examPrevious").addEventListener("click",()=>{if(examIndex>0){examIndex--;renderExam();}});
+$("examNext").addEventListener("click",async()=>{
+  if(!examSet.length||examFinished)return;
+  if(examIndex<examSet.length-1){examIndex++;renderExam();return;}
+  const unanswered=examSet.filter((item,index)=>!(examAnswers[index]||"").trim()).length;
+  if(unanswered&&!confirm(unanswered+" Aufgaben sind noch unbeantwortet. Prüfung trotzdem abgeben?"))return;
+  examFinished=true;$("examNext").disabled=true;
+  setStatus("examResult","Deine Antworten werden ausgewertet ...");
+  $("examResult").classList.remove("hidden");
+  try{
+    const subject=$("examSubject").value;
+    const submission=examSet.map((item,index)=>`Aufgabe ${index+1}: ${item.question}\nErwartungshorizont: ${item.criteria}\nAntwort: ${examAnswers[index]||"(nicht beantwortet)"}`).join("\n\n");
+    const feedback=await askAI({subject,mode:"review",level:$("examLevel").value,materials:$("examMaterials").checked,question:"Werte diese Probeprüfung anhand des Erwartungshorizonts aus. Gib für jede Aufgabe fachliches Feedback, Stärken, Fehler, fehlende Aspekte und konkrete Verbesserungshinweise. Erfinde keine Punktzahl, wenn keine belastbare Bewertung möglich ist.\n\n"+submission});
+    showResult("examResult",feedback);
+    $("examResult").classList.add("status");
+  }catch(error){setStatus("examResult","Auswertung fehlgeschlagen: "+error.message,"error");}
+});
+
+/* SCHREIBATELIER */
+async function writingRequest(mode){
+  const subject=$("writingSubject").value;
+  const type=$("writingType").value;
+  const topic=$("writingTopic").value.trim();
+  if(!topic)throw new Error("Bitte zuerst einen Schreibauftrag eingeben.");
+  const level=$("writingLevel").value;
+  const question=`Du bist die Schreibberatung von ATELIER AI für die gymnasiale Oberstufe in Bayern.
+Fach: ${subject}. Textsorte: ${type}. Niveau: ${level}.
+Aufgabenstellung: ${topic}
+${mode==="outline"?"Erstelle eine differenzierte Gliederung mit Einleitung, Hauptteil, Schluss, Argumentationsgang und Hinweisen zu passenden Fachbegriffen. Schreibe nicht den vollständigen Text.":"Gib eine Schreibberatung: erläutere Anforderungen, sinnvolle Struktur, Argumentationsstrategie, fachliche Kriterien und typische Fehler. Schreibe nicht den vollständigen Text."}`;
+  return askAI({subject,mode:"explain",level,materials:$("writingMaterials").checked,question});
+}
+
+$("createOutline").addEventListener("click",async()=>{
+  $("createOutline").disabled=true;setStatus("writingStatus","Die Gliederung wird erstellt ...");
+  try{
+    const result=await writingRequest("outline");
+    showResult("writingResult",result);setStatus("writingStatus","Gliederung erstellt.","success");
+  }catch(error){setStatus("writingStatus","Fehler: "+error.message,"error");}
+  finally{$("createOutline").disabled=false;}
+});
+
+$("writingHelp").addEventListener("click",async()=>{
+  $("writingHelp").disabled=true;setStatus("writingStatus","Die Schreibberatung wird vorbereitet ...");
+  try{
+    const result=await writingRequest("help");
+    showResult("writingResult",result);setStatus("writingStatus","Schreibberatung erstellt.","success");
+  }catch(error){setStatus("writingStatus","Fehler: "+error.message,"error");}
+  finally{$("writingHelp").disabled=false;}
+});
+
+async function reviewText(improve){
+  const draft=$("draftText").value.trim();
+  if(!draft){setStatus("reviewStatus","Bitte zuerst einen Text eingeben.","error");return;}
+  const subject=$("writingSubject").value;
+  const type=$("writingType").value;
+  const question=improve
+    ?`Schlage konkrete Überarbeitungen für diesen Text vor. Erhalte die eigene Stimme der schreibenden Person. Erkläre, welche Stellen verbessert werden sollten, und gib beispielhafte Alternativformulierungen. Schreibe nicht ungefragt den gesamten Text neu.\nTextsorte: ${type}\nText:\n${draft}`
+    :`Analysiere diesen Text fachlich und sprachlich. Prüfe Aufgabenbezug, Aufbau, Argumentation, Fachsprache, Belege, Kohärenz und sprachliche Richtigkeit. Nenne konkrete Stärken und Verbesserungsmöglichkeiten. Erfinde keine Note.\nTextsorte: ${type}\nText:\n${draft}`;
+  const button=improve?"improveDraft":"reviewDraft";
+  $(button).disabled=true;setStatus("reviewStatus","Der Text wird analysiert ...");
+  try{
+    const result=await askAI({subject,mode:"review",level:$("writingLevel").value,materials:false,question});
+    showResult("reviewResult",result);setStatus("reviewStatus","Analyse abgeschlossen.","success");
+  }catch(error){setStatus("reviewStatus","Fehler: "+error.message,"error");}
+  finally{$(button).disabled=false;}
+}
+$("reviewDraft").addEventListener("click",()=>reviewText(false));
+$("improveDraft").addEventListener("click",()=>reviewText(true));
+
+/* MATERIALIEN */
+async function refreshMaterials(){
+  const list=$("materialList");list.replaceChildren();
+  try{
+    const materials=await knowledgeBase.getAll($("materialSubject").value);
+    if(!materials.length){list.textContent="Für dieses Fach sind noch keine Materialien gespeichert.";return;}
+    materials.forEach(material=>{
+      const item=document.createElement("div");item.className="material-item";
+      const title=document.createElement("strong");title.textContent=material.title;
+      const detail=document.createElement("p");detail.className="muted";detail.textContent=material.subject+" · "+(material.content||"").length+" Zeichen";
+      const remove=document.createElement("button");remove.className="button secondary";remove.textContent="Löschen";remove.style.marginTop="8px";
+      remove.addEventListener("click",async()=>{
+        if(!confirm("Dieses Material wirklich löschen?"))return;
+        await knowledgeBase.remove(material.id);refreshMaterials();
+      });
+      item.append(title,detail,remove);list.append(item);
     });
+  }catch(error){list.textContent="Fehler: "+error.message;}
+}
+window.refreshAtelierMaterials=refreshMaterials;
+$("refreshMaterials").addEventListener("click",refreshMaterials);
+$("materialSubject").addEventListener("change",refreshMaterials);
 
-    area.appendChild(container);
+$("importMaterial").addEventListener("click",async()=>{
+  const file=$("materialFile").files[0];
+  if(!file){setStatus("materialStatus","Bitte zuerst eine Datei auswählen.","error");return;}
+  $("importMaterial").disabled=true;setStatus("materialStatus","Datei wird verarbeitet ...");
+  try{
+    const material=await materialImporter.importFile(file);
+    await knowledgeBase.add({subject:$("materialSubject").value,title:material.title,content:material.content,source:"Lokaler Dateiimport"});
+    $("materialFile").value="";setStatus("materialStatus","Material erfolgreich gespeichert.","success");await refreshMaterials();
+  }catch(error){setStatus("materialStatus","Import fehlgeschlagen: "+error.message,"error");}
+  finally{$("importMaterial").disabled=false;}
+});
 
-    if (!completed[currentIndex]) {
-      const check = document.createElement("button");
-      check.className = "button";
-      check.textContent = "Antworten überprüfen";
-      check.style.marginTop = "15px";
-
-      check.addEventListener("click", () => {
-        const values = inputs.map(input => input.value.trim());
-
-        if (values.some(value => !value)) {
-          alert("Bitte alle Lücken ausfüllen.");
-          return;
-        }
-
-        selectedAnswers[currentIndex] = values;
-        completed[currentIndex] = true;
-        renderExercise();
-      });
-
-      area.appendChild(check);
-    } else {
-      const values = selectedAnswers[currentIndex] || [];
-      const correctCount = item.answers.filter((answer, index) =>
-        answer.toLowerCase().trim() === (values[index] || "").toLowerCase().trim()
-      ).length;
-
-      const feedback = document.createElement("div");
-      feedback.className = "feedback";
-      feedback.textContent = correctCount + " von " + item.answers.length +
-        " Lücken richtig. Lösungen: " + item.answers.join(", ") + ". " + item.explanation;
-      area.appendChild(feedback);
-    }
-  }
-
-  $("previousExercise").addEventListener("click", () => {
-    if (currentIndex > 0) {
-      currentIndex--;
-      revealed = false;
-      renderExercise();
-    }
-  });
-
-  $("nextExercise").addEventListener("click", () => {
-    if (!currentSet) return;
-
-    if (currentIndex < currentSet.items.length - 1) {
-      currentIndex++;
-      revealed = false;
-      renderExercise();
-      return;
-    }
-
-    const total = currentSet.items.length;
-    const done = Object.keys(completed).length;
-
-    $("exerciseSummary").classList.remove("hidden");
-    $("exerciseSummary").textContent =
-      "Lerneinheit beendet. " + done + " von " + total + " Übungen bearbeitet.";
-    $("nextExercise").disabled = true;
-    $("nextExercise").textContent = "Abgeschlossen";
-  });
-
-  async function checkGPU() {
-    try {
-      const result = await atelierAI.checkSupport();
-      $("gpuStatus").textContent = result.reason;
-      $("gpuStatus").className = result.supported ? "status success" : "status error";
-    } catch (error) {
-      $("gpuStatus").textContent = error.message;
-      $("gpuStatus").className = "status error";
-    }
-  }
-
-  function updateModelButtons() {
-    const status = atelierAI.getStatus().localModel;
-
-    $("loadModel").disabled = status.ready || status.loading || !$("model").value;
-    $("unloadModel").disabled = !status.ready;
-    $("model").disabled = status.ready || status.loading;
-    $("loadModels").disabled = status.loading;
-
-    if (status.ready) $("modelStatus").textContent = "Modell geladen: " + status.model;
-  }
-
-  $("loadModels").addEventListener("click", async () => {
-    $("loadModels").disabled = true;
-    $("modelStatus").textContent = "Modellliste wird geladen ...";
-
-    try {
-      const models = await atelierAI.getAvailableModels();
-      const select = $("model");
-      select.replaceChildren();
-
-      models.forEach(model => {
-        const option = document.createElement("option");
-        option.value = model.id;
-        option.textContent = model.name;
-        select.appendChild(option);
-      });
-
-      if (!models.length) throw new Error("Keine passenden Modelle gefunden.");
-
-      select.disabled = false;
-      $("modelStatus").textContent = models.length + " Modelle gefunden.";
-    } catch (error) {
-      $("modelStatus").textContent = "Fehler: " + error.message;
-    } finally {
-      $("loadModels").disabled = false;
-      updateModelButtons();
-    }
-  });
-
-  $("model").addEventListener("change", updateModelButtons);
-
-  $("loadModel").addEventListener("click", async () => {
-    $("loadModel").disabled = true;
-    $("model").disabled = true;
-    $("modelStatus").textContent = "Modell wird geladen ...";
-    $("progress").value = 0;
-
-    try {
-      await atelierAI.loadModel($("model").value, report => {
-        $("progress").value = report.progress;
-        $("modelStatus").textContent = report.text + " (" + report.progress + "%)";
-      });
-
-      $("modelStatus").textContent = "Modell erfolgreich geladen.";
-      $("modelStatus").className = "status success";
-    } catch (error) {
-      $("modelStatus").textContent = "Fehler: " + error.message;
-      $("modelStatus").className = "status error";
-    } finally {
-      updateModelButtons();
-    }
-  });
-
-  $("unloadModel").addEventListener("click", async () => {
-    $("unloadModel").disabled = true;
-
-    try {
-      await atelierAI.unloadModel();
-      $("progress").value = 0;
-      $("modelStatus").textContent = "Modell entladen.";
-      $("modelStatus").className = "status";
-    } catch (error) {
-      $("modelStatus").textContent = error.message;
-    }
-
-    updateModelButtons();
-  });
-
-  checkGPU();
+/* LOKALES KI-MODELL */
+async function checkGPU(){
+  try{
+    const result=await atelierAI.checkSupport();
+    setStatus("gpuStatus",result.reason,result.supported?"success":"error");
+  }catch(error){setStatus("gpuStatus",error.message,"error");}
+}
+function updateModelButtons(){
+  const status=atelierAI.getStatus().localModel;
+  $("loadModel").disabled=status.ready||status.loading||!$("model").value;
+  $("unloadModel").disabled=!status.ready;
+  $("model").disabled=status.ready||status.loading;
+  $("loadModels").disabled=status.loading;
+  if(status.ready)setStatus("modelStatus","Modell geladen: "+status.model,"success");
+}
+$("loadModels").addEventListener("click",async()=>{
+  $("loadModels").disabled=true;setStatus("modelStatus","Modellliste wird geladen ...");
+  try{
+    const models=await atelierAI.getAvailableModels();
+    const select=$("model");select.replaceChildren();
+    models.forEach(model=>{
+      const option=document.createElement("option");option.value=model.id;option.textContent=model.name;select.append(option);
+    });
+    if(!models.length)throw new Error("Keine passenden Modelle gefunden.");
+    select.disabled=false;setStatus("modelStatus",models.length+" Modelle gefunden.","success");
+  }catch(error){setStatus("modelStatus","Fehler: "+error.message,"error");}
+  finally{$("loadModels").disabled=false;updateModelButtons();}
+});
+$("model").addEventListener("change",updateModelButtons);
+$("loadModel").addEventListener("click",async()=>{
+  $("loadModel").disabled=true;$("model").disabled=true;setStatus("modelStatus","Modell wird geladen ...");$("progress").value=0;
+  try{
+    await atelierAI.loadModel($("model").value,report=>{
+      $("progress").value=report.progress;setStatus("modelStatus",report.text+" ("+report.progress+"%)");
+    });
+    setStatus("modelStatus","Modell erfolgreich geladen.","success");
+  }catch(error){setStatus("modelStatus","Fehler: "+error.message,"error");}
+  finally{updateModelButtons();}
+});
+$("unloadModel").addEventListener("click",async()=>{
+  $("unloadModel").disabled=true;
+  try{await atelierAI.unloadModel();$("progress").value=0;setStatus("modelStatus","Modell entladen.");}
+  catch(error){setStatus("modelStatus",error.message,"error");}
   updateModelButtons();
-  refreshMaterials();
+});
 
-} catch (error) {
+checkGPU();updateModelButtons();refreshMaterials();
+
+}catch(error){
   errorDisplay.classList.remove("hidden");
-  errorDisplay.textContent =
-    "ATELIER konnte ein benötigtes Modul nicht laden: " +
-    (error.message || String(error));
+  errorDisplay.textContent="ATELIER konnte ein benötigtes Modul nicht laden: "+(error.message||String(error));
   console.error(error);
 }
 </script>
