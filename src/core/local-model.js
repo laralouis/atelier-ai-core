@@ -306,7 +306,7 @@ ${request.metadata?.mode === "quiz"
               content: userMessage
             }
           ],
-          temperature: 0.4,
+          temperature: 0.1,
           max_tokens: MAX_OUTPUT_TOKENS
         });
 
