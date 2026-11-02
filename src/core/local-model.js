@@ -95,6 +95,14 @@ function prepareContext(materials = []) {
 }
 
 function getFriendlyError(error) {
+  const message = String(
+    error?.message || error || "Unbekannter Fehler"
+  );
+
+  console.error("ATELIER AI – Originalfehler:", error);
+
+  return message;
+}
   const message = safeText(error?.message || error);
 
   if (/context window|prompt tokens exceed/i.test(message)) {
