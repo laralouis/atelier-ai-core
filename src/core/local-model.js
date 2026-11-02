@@ -1,16 +1,9 @@
 
 /**
  * ATELIER AI – Local AI Model
- * Version 0.4
+ * Version 0.5
  *
- * Lokale KI-Ausführung über WebLLM und WebGPU.
- * Begrenzter Kontext für Geräte mit wenig GPU-Speicher.
- *
- * Verbesserungen:
- * - Serielle Verarbeitung aller KI-Anfragen
- * - Schutz vor parallelen Modellzugriffen
- * - Geschütztes Entladen des Modells
- * - Fehlerbehandlung für WebGPU und WebLLM
+ * Serielle Verwaltung aller WebLLM-Modellzugriffe.
  */
 
 const WEBLLM_URL = "https://esm.sh/@mlc-ai/web-llm@0.2.79";
@@ -35,10 +28,6 @@ function isExternalMaterial(item) {
   );
 }
 
-/**
- * Bereitet den gesamten Materialkontext auf.
- * Lokale Unterrichtsmaterialien haben Vorrang.
- */
 function prepareContext(materials = []) {
   const validMaterials = materials.filter(
     item => item && safeText(item.content)
@@ -62,9 +51,10 @@ function prepareContext(materials = []) {
       `Material: ${safeText(item.title)}\n` +
       `${safeText(item.content)}\n\n`;
 
-    const remaining = MAX_LOCAL_CHARS - localText.length;
-
-    localText += block.slice(0, remaining);
+    localText += block.slice(
+      0,
+      MAX_LOCAL_CHARS - localText.length
+    );
   }
 
   for (const item of externalMaterials) {
@@ -74,31 +64,25 @@ function prepareContext(materials = []) {
       `Externe Quelle: ${safeText(item.title)}\n` +
       `${safeText(item.content)}\n\n`;
 
-    const remaining = MAX_EXTERNAL_CHARS - externalText.length;
-
-    externalText += block.slice(0, remaining);
+    externalText += block.slice(
+      0,
+      MAX_EXTERNAL_CHARS - externalText.length
+    );
   }
 
   let context = "";
 
   if (localText.trim()) {
-    context +=
-      "UNTERRICHTSMATERIALIEN:\n" +
-      localText.trim();
+    context += "UNTERRICHTSMATERIALIEN:\n" + localText.trim();
   }
 
   if (externalText.trim()) {
-    context +=
-      "\n\nEXTERNE RECHERCHE:\n" +
-      externalText.trim();
+    context += "\n\nEXTERNE RECHERCHE:\n" + externalText.trim();
   }
 
   return context.slice(0, MAX_CONTEXT_CHARS);
 }
 
-/**
- * Gibt die ursprüngliche Fehlermeldung zurück.
- */
 function getFriendlyError(error) {
   const message = String(
     error?.message || error || "Unbekannter Fehler"
@@ -110,7 +94,6 @@ function getFriendlyError(error) {
 }
 
 export class LocalModel {
-
   constructor() {
     this.engine = null;
     this.webllm = null;
@@ -125,18 +108,14 @@ export class LocalModel {
     this.status = "not_loaded";
     this.error = null;
 
-    // Warteschlange für alle Modellzugriffe
     this.requestQueue = Promise.resolve();
   }
 
   /**
-   * Führt Modellzugriffe nacheinander aus.
+   * Alle Modellzugriffe werden nacheinander ausgeführt.
    */
   async runExclusive(task) {
-    const current = this.requestQueue.then(
-      task,
-      task
-    );
+    const current = this.requestQueue.then(task, task);
 
     this.requestQueue = current.then(
       () => undefined,
@@ -146,9 +125,6 @@ export class LocalModel {
     return current;
   }
 
-  /**
-   * Prüft, ob WebGPU verfügbar ist.
-   */
   async checkSupport() {
     if (!navigator.gpu) {
       return {
@@ -171,20 +147,14 @@ export class LocalModel {
         supported: true,
         reason: "WebGPU ist verfügbar."
       };
-
     } catch (error) {
       return {
         supported: false,
-        reason:
-          error.message ||
-          "WebGPU-Prüfung fehlgeschlagen."
+        reason: error.message || "WebGPU-Prüfung fehlgeschlagen."
       };
     }
   }
 
-  /**
-   * Lädt die WebLLM-Bibliothek.
-   */
   async loadWebLLM() {
     if (!this.webllm) {
       this.webllm = await import(WEBLLM_URL);
@@ -193,9 +163,6 @@ export class LocalModel {
     return this.webllm;
   }
 
-  /**
-   * Ermittelt kleine, registrierte Modelle.
-   */
   async getAvailableModels() {
     const webllm = await this.loadWebLLM();
 
@@ -208,109 +175,101 @@ export class LocalModel {
   }
 
   /**
-   * Lädt ein ausgewähltes Modell.
+   * Laden läuft jetzt ebenfalls innerhalb der Warteschlange.
    */
   async load(modelId, onProgress = () => {}) {
-    if (this.loading) {
-      throw new Error(
-        "Ein Modell wird bereits geladen."
-      );
-    }
-
-    if (this.ready && this.modelId === modelId) {
-      return this.getStatus();
-    }
-
-    if (!modelId) {
-      throw new Error(
-        "Bitte zuerst ein Modell auswählen."
-      );
-    }
-
-    if (this.generating || this.unloading) {
-      throw new Error(
-        "Das Modell ist gerade in Benutzung."
-      );
-    }
-
-    this.loading = true;
-    this.ready = false;
-    this.error = null;
-    this.status = "checking";
-    this.progress = 0;
-
-    try {
-      const support = await this.checkSupport();
-
-      if (!support.supported) {
-        throw new Error(support.reason);
+    return this.runExclusive(async () => {
+      if (!modelId) {
+        throw new Error("Bitte zuerst ein Modell auswählen.");
       }
 
-      const webllm = await this.loadWebLLM();
-
-      const available = webllm.prebuiltAppConfig.model_list
-        .some(model => model.model_id === modelId);
-
-      if (!available) {
-        throw new Error(
-          "Dieses Modell ist in WebLLM nicht registriert."
-        );
+      if (this.ready && this.modelId === modelId && this.engine) {
+        return this.getStatus();
       }
 
-      this.status = "loading";
+      this.loading = true;
+      this.ready = false;
+      this.error = null;
+      this.status = "checking";
+      this.progress = 0;
 
-      const engine = await webllm.CreateMLCEngine(
-        modelId,
-        {
-          initProgressCallback: report => {
-            this.progress = Math.round(
-              (report.progress || 0) * 100
-            );
+      const oldEngine = this.engine;
 
-            this.status = "loading";
-
-            onProgress({
-              progress: this.progress,
-              text: report.text || "Modell wird geladen."
-            });
-          }
-        }
-      );
-
-      this.engine = engine;
-      this.modelId = modelId;
-      this.ready = true;
-      this.status = "ready";
-      this.progress = 100;
-
-      return this.getStatus();
-
-    } catch (error) {
       this.engine = null;
       this.modelId = null;
-      this.ready = false;
-      this.status = "error";
-      this.error = getFriendlyError(error);
 
-      throw new Error(this.error);
+      try {
+        // Ein eventuell vorhandenes Modell zuerst sauber entladen.
+        if (oldEngine) {
+          await oldEngine.unload();
+        }
 
-    } finally {
-      this.loading = false;
-    }
+        const support = await this.checkSupport();
+
+        if (!support.supported) {
+          throw new Error(support.reason);
+        }
+
+        const webllm = await this.loadWebLLM();
+
+        const available = webllm.prebuiltAppConfig.model_list
+          .some(model => model.model_id === modelId);
+
+        if (!available) {
+          throw new Error(
+            "Dieses Modell ist in WebLLM nicht registriert."
+          );
+        }
+
+        this.status = "loading";
+
+        const engine = await webllm.CreateMLCEngine(
+          modelId,
+          {
+            initProgressCallback: report => {
+              this.progress = Math.round(
+                (report.progress || 0) * 100
+              );
+
+              this.status = "loading";
+
+              onProgress({
+                progress: this.progress,
+                text: report.text || "Modell wird geladen."
+              });
+            }
+          }
+        );
+
+        this.engine = engine;
+        this.modelId = modelId;
+        this.ready = true;
+        this.status = "ready";
+        this.progress = 100;
+
+        return this.getStatus();
+
+      } catch (error) {
+        this.engine = null;
+        this.modelId = null;
+        this.ready = false;
+        this.status = "error";
+        this.error = getFriendlyError(error);
+
+        throw new Error(this.error);
+
+      } finally {
+        this.loading = false;
+      }
+    });
   }
 
   /**
-   * Erzeugt eine Antwort.
-   * Alle Generierungen werden nacheinander verarbeitet.
+   * Generierung und Modellwechsel können nicht mehr kollidieren.
    */
   async generate(request) {
     return this.runExclusive(async () => {
-
-      if (
-        !this.ready ||
-        !this.engine ||
-        this.unloading
-      ) {
+      if (!this.ready || !this.engine) {
         throw new Error(
           "Es ist kein verfügbares lokales KI-Modell geladen."
         );
@@ -326,9 +285,7 @@ export class LocalModel {
       this.generating = true;
 
       try {
-        const context = prepareContext(
-          request.context || []
-        );
+        const context = prepareContext(request.context || []);
 
         const systemPrompt = `
 ${safeText(request.system)}
@@ -357,35 +314,30 @@ ${context}
 
 WICHTIGE AUSGABEREGEL:
 ${request.metadata?.mode === "quiz"
-  ? "Gib ausschließlich das verlangte JSON-Objekt zurück. Keine Einleitung, keine Erklärungen außerhalb des JSON und keine zusätzlichen Aufgabenformate."
+  ? "Gib ausschließlich das verlangte JSON-Objekt zurück. Keine Einleitung und keine Erklärungen außerhalb des JSON."
   : "Beantworte die Frage fachlich korrekt und verständlich."}
 `;
 
-        // Prüfen, ob die Engine noch dieselbe Instanz ist.
-        if (
-          this.engine !== engine ||
-          !this.ready
-        ) {
+        if (this.engine !== engine || !this.ready) {
           throw new Error(
             "Das KI-Modell wurde während der Anfrage verändert."
           );
         }
 
-        const response =
-          await engine.chat.completions.create({
-            messages: [
-              {
-                role: "system",
-                content: systemPrompt
-              },
-              {
-                role: "user",
-                content: userMessage
-              }
-            ],
-            temperature: 0.1,
-            max_tokens: MAX_OUTPUT_TOKENS
-          });
+        const response = await engine.chat.completions.create({
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: userMessage
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: MAX_OUTPUT_TOKENS
+        });
 
         const answer =
           response.choices?.[0]?.message?.content || "";
@@ -415,29 +367,14 @@ ${request.metadata?.mode === "quiz"
   }
 
   /**
-   * Entlädt das Modell.
-   * Wartet zunächst auf alle laufenden Anfragen.
+   * Entladen wird hinter alle vorherigen Anfragen gestellt.
    */
   async unload() {
     return this.runExclusive(async () => {
-
-      if (this.generating) {
-        throw new Error(
-          "Das Modell kann während einer Generierung nicht entladen werden."
-        );
-      }
-
-      if (this.loading) {
-        throw new Error(
-          "Das Modell kann während des Ladens nicht entladen werden."
-        );
-      }
-
       this.unloading = true;
 
       const engine = this.engine;
 
-      // Sofort den Status zurücksetzen.
       this.engine = null;
       this.modelId = null;
       this.ready = false;
@@ -465,9 +402,6 @@ ${request.metadata?.mode === "quiz"
     });
   }
 
-  /**
-   * Gibt den aktuellen Modellstatus zurück.
-   */
   getStatus() {
     return {
       ready: this.ready,
