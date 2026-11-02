@@ -51,10 +51,13 @@ function extractJSON(text) {
   const end = cleaned.lastIndexOf("}");
 
   if (start === -1 || end === -1 || end <= start) {
-    throw new Error(
-      "Die KI hat kein gültiges JSON-Format geliefert. Bitte versuche es erneut."
-    );
-  }
+  console.error("ATELIER AI – Ungültige KI-Antwort:", text);
+
+  throw new Error(
+    "KI-Ausgabe ist kein gültiges JSON. Empfangene Antwort: " +
+    String(text || "Keine Antwort").slice(0, 500)
+  );
+}
 
   try {
     return JSON.parse(cleaned.slice(start, end + 1));
