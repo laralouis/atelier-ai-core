@@ -539,6 +539,55 @@ function showResult(id,text){
   $(id).classList.remove("hidden");
 }
 
+/* LERNASSISTENT */
+
+$("askTutor").addEventListener("click", async () => {
+  const question = $("tutorQuestion").value.trim();
+
+  if (!question) {
+    setStatus(
+      "tutorStatus",
+      "Bitte zuerst eine Frage eingeben.",
+      "error"
+    );
+    return;
+  }
+
+  $("askTutor").disabled = true;
+  $("tutorResult").classList.add("hidden");
+
+  setStatus(
+    "tutorStatus",
+    "Dein Lernassistent bearbeitet die Frage ..."
+  );
+
+  try {
+    const answer = await askAI({
+      subject: $("tutorSubject").value,
+      mode: $("tutorMode").value,
+      question,
+      level: "anspruchsvoll",
+      materials: $("tutorMaterials").checked
+    });
+
+    showResult("tutorResult", answer);
+
+    setStatus(
+      "tutorStatus",
+      "Antwort erstellt.",
+      "success"
+    );
+
+  } catch (error) {
+    setStatus(
+      "tutorStatus",
+      "Fehler: " + error.message,
+      "error"
+    );
+  } finally {
+    $("askTutor").disabled = false;
+  }
+});  
 /* LERNSTUDIO */
 let selectedFormat=null;
 let currentSet=null;
