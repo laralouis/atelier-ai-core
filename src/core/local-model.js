@@ -1,7 +1,7 @@
 
 /**
  * ATELIER AI – Local AI Model
- * Version 0.2
+ * Version 0.3
  *
  * Lokale KI-Ausführung über WebLLM und WebGPU.
  * Begrenzter Kontext für Geräte mit wenig GPU-Speicher.
@@ -11,7 +11,7 @@ const WEBLLM_URL = "https://esm.run/@mlc-ai/web-llm";
 
 const MODEL_PATTERN = /(0\.5B|0\.6B|1B)(?=[-_])/i;
 
-// Konservative Grenzen für das 4096-Token-Kontextfenster
+// Begrenzter Kontext für das 4096-Token-Kontextfenster
 const MAX_CONTEXT_CHARS = 4500;
 const MAX_LOCAL_CHARS = 3600;
 const MAX_EXTERNAL_CHARS = 900;
@@ -36,9 +36,7 @@ function isExternalMaterial(item) {
  */
 function prepareContext(materials = []) {
   const validMaterials = materials.filter(
-    item =>
-      item &&
-      safeText(item.content)
+    item => item && safeText(item.content)
   );
 
   const localMaterials = validMaterials.filter(
@@ -60,7 +58,6 @@ function prepareContext(materials = []) {
       `${safeText(item.content)}\n\n`;
 
     const remaining = MAX_LOCAL_CHARS - localText.length;
-
     localText += block.slice(0, remaining);
   }
 
@@ -71,9 +68,7 @@ function prepareContext(materials = []) {
       `Externe Quelle: ${safeText(item.title)}\n` +
       `${safeText(item.content)}\n\n`;
 
-    const remaining =
-      MAX_EXTERNAL_CHARS - externalText.length;
-
+    const remaining = MAX_EXTERNAL_CHARS - externalText.length;
     externalText += block.slice(0, remaining);
   }
 
@@ -94,6 +89,9 @@ function prepareContext(materials = []) {
   return context.slice(0, MAX_CONTEXT_CHARS);
 }
 
+/**
+ * Gibt die ursprüngliche Fehlermeldung zurück.
+ */
 function getFriendlyError(error) {
   const message = String(
     error?.message || error || "Unbekannter Fehler"
@@ -102,24 +100,6 @@ function getFriendlyError(error) {
   console.error("ATELIER AI – Originalfehler:", error);
 
   return message;
-}
-  const message = safeText(error?.message || error);
-
-  if (/context window|prompt tokens exceed/i.test(message)) {
-    return (
-      "Der Lernkontext ist noch zu umfangreich. " +
-      "Bitte stelle eine konkretere Frage oder reduziere die Materialien."
-    );
-  }
-
-  if (/mapasync|map async|gpu/i.test(message)) {
-    return (
-      "Die GPU-Verarbeitung ist fehlgeschlagen. " +
-      "Bitte lade die Seite neu und versuche es erneut."
-    );
-  }
-
-  return message || "Unbekannter Fehler bei der KI-Verarbeitung.";
 }
 
 export class LocalModel {
@@ -159,10 +139,11 @@ export class LocalModel {
         supported: true,
         reason: "WebGPU ist verfügbar."
       };
+
     } catch (error) {
       return {
         supported: false,
-        reason: error.message
+        reason: error.message || "WebGPU-Prüfung fehlgeschlagen."
       };
     }
   }
@@ -373,6 +354,9 @@ Beantworte die Frage fachlich korrekt und verständlich.
     return this.getStatus();
   }
 
+  /**
+   * Gibt den aktuellen Modellstatus zurück.
+   */
   getStatus() {
     return {
       ready: this.ready,
