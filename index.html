@@ -58,7 +58,7 @@
       font-weight: 600;
     }
 
-    textarea, select, button {
+    textarea, select, button, input[type="file"] {
       width: 100%;
       padding: 13px;
       margin-top: 8px;
@@ -66,7 +66,7 @@
       font: inherit;
     }
 
-    textarea, select {
+    textarea, select, input[type="file"] {
       background: var(--background);
       color: white;
       border: 1px solid #40536c;
@@ -94,6 +94,13 @@
       background: #34465e;
     }
 
+    button.delete {
+      width: auto;
+      padding: 7px 12px;
+      background: #75434b;
+      margin: 8px 0;
+    }
+
     #answer {
       white-space: pre-wrap;
       line-height: 1.7;
@@ -117,13 +124,22 @@
       overflow-wrap: anywhere;
     }
 
-    .source {
+    .source, .material-item {
       padding: 12px 0;
       border-bottom: 1px solid var(--border);
+      overflow-wrap: anywhere;
+    }
+
+    .material-item button {
+      display: block;
     }
 
     a {
       color: #91c8ff;
+    }
+
+    footer {
+      padding: 12px 0;
     }
   </style>
 </head>
@@ -165,6 +181,56 @@
     <p id="modelStatus" class="muted">
       Noch kein Modell geladen.
     </p>
+  </section>
+
+  <section>
+    <h2>Meine Lernmaterialien</h2>
+
+    <p class="muted">
+      Importiere eigene Unterrichtsmaterialien.
+      Unterstützt werden zunächst PDF und TXT.
+    </p>
+
+    <label for="materialSubject">Schulfach</label>
+    <select id="materialSubject">
+      <option>Mathematik</option>
+      <option>Deutsch</option>
+      <option>Geographie</option>
+      <option>Chemie</option>
+      <option>Musik</option>
+      <option>Sport</option>
+      <option>Spanisch</option>
+      <option>Englisch</option>
+      <option>Evangelische Religion</option>
+      <option>Biologie</option>
+      <option>Politik und Gesellschaft</option>
+      <option>Geschichte</option>
+    </select>
+
+    <label for="materialFile">Datei auswählen</label>
+    <input
+      type="file"
+      id="materialFile"
+      accept=".pdf,.txt,application/pdf,text/plain"
+    >
+
+    <button id="importMaterial">
+      Material importieren
+    </button>
+
+    <p id="materialStatus" class="status" aria-live="polite">
+      Noch keine Datei importiert.
+    </p>
+
+    <h3>Gespeicherte Materialien</h3>
+
+    <button id="refreshMaterials" class="secondary">
+      Materialliste aktualisieren
+    </button>
+
+    <div id="materialList">
+      <p class="muted">Materialien werden geladen ...</p>
+    </div>
   </section>
 
   <section>
@@ -222,7 +288,7 @@
   </section>
 
   <footer class="muted">
-    <p>ATELIER AI · Version 0.3</p>
+    <p>ATELIER AI · Version 0.4</p>
     <p>Lokale KI und persönliche Wissensbasis.</p>
   </footer>
 
@@ -231,6 +297,8 @@
 <script type="module">
   import { atelierEngine } from "./src/core/engine.js";
   import { atelierAI } from "./src/core/ai.js";
+  import { materialImporter } from "./src/core/material-import.js";
+  import { knowledgeBase } from "./src/core/knowledge.js";
 
   const $ = id => document.getElementById(id);
 
@@ -239,6 +307,7 @@
   const loadButton = $("loadModel");
   const unloadButton = $("unloadModel");
   const askButton = $("ask");
+  const importButton = $("importMaterial");
 
   function showStatus(message) {
     $("modelStatus").textContent = message;
@@ -273,6 +342,105 @@
     }
   }
 
+  async function refreshMaterials() {
+    const list = $("materialList");
+    const subject = $("materialSubject").value;
+
+    list.replaceChildren();
+
+    try {
+      const materials = await knowledgeBase.getAll(subject);
+
+      if (!materials.length) {
+        list.textContent =
+          "Für dieses Fach sind noch keine Materialien gespeichert.";
+        return;
+      }
+
+      for (const material of materials) {
+        const item = document.createElement("div");
+        item.className = "material-item";
+
+        const title = document.createElement("strong");
+        title.textContent = material.title;
+
+        const details = document.createElement("p");
+        details.className = "muted";
+        details.textContent =
+          material.subject + " · " +
+          Math.round((material.content || "").length / 1000) +
+          " Tsd. Zeichen";
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete";
+        deleteButton.textContent = "Material löschen";
+
+        deleteButton.addEventListener("click", async () => {
+          if (!confirm("Dieses Material wirklich löschen?")) return;
+
+          try {
+            await knowledgeBase.remove(material.id);
+            $("materialStatus").textContent =
+              "Material wurde gelöscht.";
+            await refreshMaterials();
+          } catch (error) {
+            $("materialStatus").textContent =
+              "Löschen fehlgeschlagen: " + error.message;
+          }
+        });
+
+        item.append(title, details, deleteButton);
+        list.appendChild(item);
+      }
+    } catch (error) {
+      list.textContent =
+        "Materialliste konnte nicht geladen werden: " +
+        error.message;
+    }
+  }
+
+  $("materialSubject").addEventListener("change", refreshMaterials);
+  $("refreshMaterials").addEventListener("click", refreshMaterials);
+
+  importButton.addEventListener("click", async () => {
+    const file = $("materialFile").files[0];
+    const subject = $("materialSubject").value;
+
+    if (!file) {
+      $("materialStatus").textContent =
+        "Bitte zuerst eine Datei auswählen.";
+      return;
+    }
+
+    importButton.disabled = true;
+    $("materialStatus").textContent =
+      "Datei wird verarbeitet ...";
+
+    try {
+      const material = await materialImporter.importFile(file);
+
+      await knowledgeBase.add({
+        subject,
+        title: material.title,
+        content: material.content,
+        source: "Lokaler Dateiimport"
+      });
+
+      $("materialStatus").textContent =
+        "Material erfolgreich gespeichert.";
+
+      $("materialFile").value = "";
+
+      await refreshMaterials();
+
+    } catch (error) {
+      $("materialStatus").textContent =
+        "Import fehlgeschlagen: " + error.message;
+    } finally {
+      importButton.disabled = false;
+    }
+  });
+
   loadModelsButton.addEventListener("click", async () => {
     loadModelsButton.disabled = true;
     showStatus("Modellliste wird geladen ...");
@@ -298,7 +466,6 @@
 
     } catch (error) {
       showStatus("Fehler: " + error.message);
-
     } finally {
       loadModelsButton.disabled = false;
       updateModelButtons();
@@ -331,7 +498,6 @@
 
     } catch (error) {
       showStatus("Laden fehlgeschlagen: " + error.message);
-
     } finally {
       updateModelButtons();
     }
@@ -344,10 +510,8 @@
       await atelierAI.unloadModel();
       $("progress").value = 0;
       showStatus("Modell wurde entladen.");
-
     } catch (error) {
       showStatus("Fehler: " + error.message);
-
     } finally {
       updateModelButtons();
     }
@@ -427,7 +591,6 @@
 
       $("researchStatus").textContent =
         "Die Anfrage konnte nicht abgeschlossen werden.";
-
     } finally {
       askButton.disabled = false;
     }
@@ -435,6 +598,7 @@
 
   checkGPU();
   updateModelButtons();
+  refreshMaterials();
 </script>
 
 </body>
