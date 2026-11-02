@@ -13,7 +13,7 @@
  * - Fehlerbehandlung für WebGPU und WebLLM
  */
 
-const WEBLLM_URL = "https://esm.run/@mlc-ai/web-llm";
+const WEBLLM_URL = "https://esm.sh/@mlc-ai/web-llm@0.2.79";
 
 const MODEL_PATTERN = /(0\.5B|0\.6B|1B)(?=[-_])/i;
 
