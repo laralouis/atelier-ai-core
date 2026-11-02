@@ -176,6 +176,22 @@ export class LearningStudio {
 
     const formatInstruction = FORMATS[format].instruction
       .replace("{count}", String(amount));
+    const schemaInstruction = {
+  flashcards: `
+Gib dieses JSON-Format zurück:
+{"items":[{"question":"Frage","answer":"Antwort"}]}
+`,
+
+  multipleChoice: `
+Gib dieses JSON-Format zurück:
+{"items":[{"question":"Frage","options":["A","B","C","D"],"correctIndex":0,"explanation":"Erklärung"}]}
+`,
+
+  cloze: `
+Gib dieses JSON-Format zurück:
+{"items":[{"text":"Satz mit {{LUECKE}}","answers":["Lösung"],"explanation":"Erklärung"}]}
+`
+}[format];
 
     const prompt = `
 Du bist ein Lernassistent für das Gymnasium Bayern (Jahrgangsstufe 12/13).
