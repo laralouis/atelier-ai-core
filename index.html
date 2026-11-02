@@ -4,19 +4,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
+  <meta name="theme-color" content="#F7F5F0">
 
-  <title>ATELIER AI</title>
+  <title>ATELIER AI – Learning Space</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      color-scheme: dark;
-      --background: #101827;
-      --surface: #1b293c;
-      --border: #33445c;
-      --accent: #477fb8;
-      --text: #edf3fb;
-      --muted: #aabbd0;
+      color-scheme: light;
+      --background: #F7F5F0;
+      --surface: #FFFFFF;
+      --ink: #30312E;
+      --muted: #85847D;
+      --line: #E7E3DB;
+      --sand: #E9E2D7;
+      --sage: #E3E9E1;
+      --terracotta: #EFE5DC;
+      --blue: #E3E8E9;
+      --green-ink: #586B59;
+      --accent: #857866;
+      --danger: #9B5550;
+      --serif: "Cormorant Garamond", Georgia, serif;
+      --sans: "DM Sans", Arial, sans-serif;
     }
 
     * {
@@ -25,331 +37,851 @@
 
     body {
       margin: 0;
-      padding: 24px 16px;
       background: var(--background);
-      color: var(--text);
-      font-family: system-ui, sans-serif;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.65;
     }
 
-    main {
-      max-width: 760px;
-      margin: auto;
-    }
-
-    header {
-      padding: 20px 0;
-    }
-
-    header p {
-      color: var(--muted);
-    }
-
-    section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      margin: 18px 0;
-    }
-
-    label {
-      display: block;
-      margin-top: 14px;
-      font-weight: 600;
-    }
-
-    textarea, select, button, input[type="file"] {
-      width: 100%;
-      padding: 13px;
-      margin-top: 8px;
-      border-radius: 9px;
+    button, input, select, textarea {
       font: inherit;
     }
 
-    textarea, select, input[type="file"] {
-      background: var(--background);
-      color: white;
-      border: 1px solid #40536c;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
     button {
-      background: var(--accent);
-      color: white;
-      border: 0;
-      font-weight: bold;
       cursor: pointer;
     }
 
     button:disabled {
-      opacity: 0.5;
+      opacity: .45;
       cursor: not-allowed;
     }
 
-    button.secondary {
-      background: #34465e;
+    .shell {
+      width: min(1120px, 100%);
+      margin: auto;
+      padding: 0 28px;
     }
 
-    button.delete {
-      width: auto;
-      padding: 7px 12px;
-      background: #75434b;
-      margin: 8px 0;
+    header {
+      border-bottom: 1px solid var(--line);
+      background: rgba(247,245,240,.94);
     }
 
-    #answer {
-      white-space: pre-wrap;
-      line-height: 1.7;
-      overflow-wrap: anywhere;
+    .topbar {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
     }
 
-    #progress {
+    .brand {
+      font-family: var(--serif);
+      font-size: 29px;
+      letter-spacing: .06em;
+      font-weight: 500;
+    }
+
+    .brand small {
+      display: block;
+      font-family: var(--sans);
+      font-size: 9px;
+      letter-spacing: .22em;
+      color: var(--muted);
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    nav {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    nav button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+    }
+
+    nav button.active {
+      background: var(--sand);
+      color: var(--ink);
+    }
+
+    main {
+      padding-top: 42px;
+      padding-bottom: 70px;
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .19em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      font-family: var(--serif);
+      font-weight: 400;
+      line-height: 1.12;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(42px, 7vw, 66px);
+      letter-spacing: -.025em;
+    }
+
+    h2 {
+      font-size: 37px;
+    }
+
+    h3 {
+      font-size: 25px;
+    }
+
+    .italic {
+      font-style: italic;
+    }
+
+    .intro {
+      max-width: 640px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .hero {
+      padding: 12px 0 35px;
+    }
+
+    .hero em {
+      color: var(--accent);
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 35px 0 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 15px;
+    }
+
+    .tile {
+      border: 1px solid transparent;
+      border-radius: 13px;
+      padding: 22px;
+      min-height: 155px;
+      text-align: left;
+      color: var(--ink);
+      transition: transform .2s, border-color .2s;
+    }
+
+    .tile:hover {
+      transform: translateY(-2px);
+      border-color: #CFC8BC;
+    }
+
+    .tile.sand { background: var(--sand); }
+    .tile.sage { background: var(--sage); }
+    .tile.terra { background: var(--terracotta); }
+    .tile.blue { background: var(--blue); }
+
+    .tile-icon {
+      font-size: 21px;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .tile h3 {
+      font-size: 27px;
+    }
+
+    .tile p {
+      margin: 5px 0 0;
+      font-size: 12px;
+      color: #77746D;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 20px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 17px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: .04em;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    input, select, textarea {
       width: 100%;
-      accent-color: var(--accent);
+      padding: 12px 13px;
+      background: #FBFAF7;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #A69A86;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .button {
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: white;
+      border-radius: 30px;
+      padding: 12px 22px;
+      font-size: 12px;
+      letter-spacing: .02em;
+    }
+
+    .button.secondary {
+      color: var(--ink);
+      background: transparent;
+      border-color: var(--line);
+    }
+
+    .button.soft {
+      color: var(--green-ink);
+      background: var(--sage);
+      border-color: transparent;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
     }
 
     .muted {
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 12px;
     }
 
     .status {
-      padding: 12px;
-      border-radius: 9px;
-      background: var(--background);
+      margin-top: 13px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #F5F3EE;
+      color: var(--muted);
+      font-size: 12px;
       overflow-wrap: anywhere;
     }
 
-    .source, .material-item {
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-      overflow-wrap: anywhere;
+    .status.error {
+      color: var(--danger);
+      background: #F8EEEC;
     }
 
-    .material-item button {
+    .status.success {
+      color: var(--green-ink);
+      background: var(--sage);
+    }
+
+    .exercise {
+      margin-top: 15px;
+      padding: 22px;
+      background: #FBFAF7;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .exercise-meta {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .exercise-question {
+      font-family: var(--serif);
+      font-size: 27px;
+      line-height: 1.3;
+      margin-bottom: 18px;
+    }
+
+    .answer {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: white;
+      margin: 5px 0;
+      color: var(--ink);
+    }
+
+    .answer.selected {
+      border-color: #87937F;
+      background: var(--sage);
+    }
+
+    .answer.correct {
+      border-color: #77917B;
+      background: #E3EDE2;
+    }
+
+    .answer.wrong {
+      border-color: #C78C83;
+      background: #F6E8E5;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 13px;
+      background: var(--blue);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .flashcard {
+      min-height: 190px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 30px;
+      border-radius: 12px;
+      background: var(--sand);
+      cursor: pointer;
+    }
+
+    .flashcard p {
+      font-family: var(--serif);
+      font-size: 29px;
+      line-height: 1.3;
+      margin: 0;
+    }
+
+    .flashcard small {
       display: block;
+      margin-top: 18px;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
     }
 
-    a {
-      color: #91c8ff;
+    .progress-track {
+      height: 4px;
+      background: var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: #84927E;
+      transition: width .2s;
+    }
+
+    .source-item, .material-item {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      overflow-wrap: anywhere;
+    }
+
+    .source-item a {
+      color: var(--accent);
     }
 
     footer {
-      padding: 12px 0;
+      border-top: 1px solid var(--line);
+      padding: 22px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    @media (max-width: 700px) {
+      .shell {
+        padding: 0 17px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px 0;
+      }
+
+      nav {
+        width: 100%;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      h2 {
+        font-size: 32px;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 
 <body>
-<main>
 
-  <header>
-    <h1>ATELIER AI</h1>
-    <p>Dein unabhängiges Lernsystem für die Oberstufe.</p>
-  </header>
+<header>
+  <div class="shell topbar">
+    <div class="brand">
+      ATELIER AI
+      <small>Independent Learning Space</small>
+    </div>
 
-  <section>
-    <h2>Lokales KI-Modell</h2>
+    <nav>
+      <button class="active" data-page="home">Übersicht</button>
+      <button data-page="learning">Lernstudio</button>
+      <button data-page="materials">Materialien</button>
+      <button data-page="model">KI-Modell</button>
+    </nav>
+  </div>
+</header>
 
-    <p id="gpuStatus" class="status">
-      WebGPU wird noch nicht geprüft.
-    </p>
+<main class="shell">
 
-    <label for="model">KI-Modell auswählen</label>
-    <select id="model" disabled>
-      <option value="">Modellliste noch nicht geladen</option>
-    </select>
+  <section id="page-home">
+    <div class="hero">
+      <p class="eyebrow">Dein persönlicher Lernraum</p>
+      <h1>Wissen, <em>das bleibt.</em></h1>
+      <p class="intro">
+        Verstehe Zusammenhänge, vertiefe dein Wissen und
+        gestalte deinen eigenen Lernweg.
+      </p>
+    </div>
 
-    <button id="loadModels" class="secondary">
-      Verfügbare Modelle suchen
-    </button>
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Deine Lernumgebung</p>
+        <h2>Entdecke ATELIER</h2>
+      </div>
+    </div>
 
-    <button id="loadModel" disabled>
-      Ausgewähltes Modell laden
-    </button>
+    <div class="grid">
+      <button class="tile sand" data-open="learning">
+        <span class="tile-icon">✳</span>
+        <h3>Lernstudio</h3>
+        <p>Karteikarten, Quiz und Lückentexte</p>
+      </button>
 
-    <button id="unloadModel" class="secondary" disabled>
-      Modell entladen
-    </button>
+      <button class="tile sage" data-open="learning">
+        <span class="tile-icon">⌁</span>
+        <h3>Lernassistent</h3>
+        <p>Individuelle fachliche Unterstützung</p>
+      </button>
 
-    <progress id="progress" value="0" max="100"></progress>
+      <button class="tile terra" data-open="materials">
+        <span class="tile-icon">▤</span>
+        <h3>Wissensbasis</h3>
+        <p>Deine persönlichen Unterrichtsmaterialien</p>
+      </button>
 
-    <p id="modelStatus" class="muted">
-      Noch kein Modell geladen.
-    </p>
-  </section>
+      <button class="tile blue" data-open="model">
+        <span class="tile-icon">◌</span>
+        <h3>Lokale KI</h3>
+        <p>Dein Modell und Gerätestatus</p>
+      </button>
 
-  <section>
-    <h2>Meine Lernmaterialien</h2>
+      <button class="tile sage" data-open="learning">
+        <span class="tile-icon">⌘</span>
+        <h3>Probeprüfungen</h3>
+        <p>Wissen gezielt überprüfen</p>
+      </button>
 
-    <p class="muted">
-      Importiere eigene Unterrichtsmaterialien.
-      Unterstützt werden zunächst PDF und TXT.
-    </p>
-
-    <label for="materialSubject">Schulfach</label>
-    <select id="materialSubject">
-      <option>Mathematik</option>
-      <option>Deutsch</option>
-      <option>Geographie</option>
-      <option>Chemie</option>
-      <option>Musik</option>
-      <option>Sport</option>
-      <option>Spanisch</option>
-      <option>Englisch</option>
-      <option>Evangelische Religion</option>
-      <option>Biologie</option>
-      <option>Politik und Gesellschaft</option>
-      <option>Geschichte</option>
-    </select>
-
-    <label for="materialFile">Datei auswählen</label>
-    <input
-      type="file"
-      id="materialFile"
-      accept=".pdf,.txt,application/pdf,text/plain"
-    >
-
-    <button id="importMaterial">
-      Material importieren
-    </button>
-
-    <p id="materialStatus" class="status" aria-live="polite">
-      Noch keine Datei importiert.
-    </p>
-
-    <h3>Gespeicherte Materialien</h3>
-
-    <button id="refreshMaterials" class="secondary">
-      Materialliste aktualisieren
-    </button>
-
-    <div id="materialList">
-      <p class="muted">Materialien werden geladen ...</p>
+      <button class="tile sand" data-open="learning">
+        <span class="tile-icon">✎</span>
+        <h3>Schreibatelier</h3>
+        <p>Texte entwickeln und verbessern</p>
+      </button>
     </div>
   </section>
 
-  <section>
-    <h2>Lernassistent</h2>
+  <section id="page-learning" class="hidden">
+    <div class="hero">
+      <p class="eyebrow">ATELIER · Lernstudio</p>
+      <h1>Dein Wissen, <em>dein Rhythmus.</em></h1>
+      <p class="intro">
+        Erstelle individuelle Lernübungen auf Grundlage
+        deiner Unterrichtsmaterialien.
+      </p>
+    </div>
 
-    <label for="subject">Schulfach</label>
-    <select id="subject">
-      <option>Mathematik</option>
-      <option>Deutsch</option>
-      <option>Geographie</option>
-      <option>Chemie</option>
-      <option>Musik</option>
-      <option>Sport</option>
-      <option>Spanisch</option>
-      <option>Englisch</option>
-      <option>Evangelische Religion</option>
-      <option>Biologie</option>
-      <option>Politik und Gesellschaft</option>
-      <option>Geschichte</option>
-    </select>
+    <div class="grid">
+      <button class="tile sand" data-format="flashcards">
+        <span class="tile-icon">▤</span>
+        <h3>Karteikarten</h3>
+        <p>Fragen und Antworten trainieren</p>
+      </button>
 
-    <label for="mode">Lernmodus</label>
-    <select id="mode">
-      <option value="explain">Erklären</option>
-      <option value="quiz">Abfragen</option>
-      <option value="solve">Schrittweise lernen</option>
-      <option value="review">Antwort überprüfen</option>
-    </select>
+      <button class="tile sage" data-format="multipleChoice">
+        <span class="tile-icon">☷</span>
+        <h3>Multiple Choice</h3>
+        <p>Wissen überprüfen und verstehen</p>
+      </button>
 
-    <label for="question">Deine Frage</label>
-    <textarea
-      id="question"
-      placeholder="Was möchtest du lernen?"
-    ></textarea>
+      <button class="tile terra" data-format="cloze">
+        <span class="tile-icon">✎</span>
+        <h3>Lückentexte</h3>
+        <p>Begriffe und Zusammenhänge festigen</p>
+      </button>
+    </div>
 
-    <button id="ask">
-      Lernanfrage starten
-    </button>
+    <div class="panel">
+      <p class="eyebrow">Übungen erstellen</p>
+      <h2 id="formatTitle">Wähle ein Lernformat</h2>
+      <p id="formatDescription" class="muted">
+        Wähle oben eine Lernmethode aus.
+      </p>
 
-    <h3>Antwort</h3>
+      <div class="form-grid" style="margin-top:22px">
+        <div class="field">
+          <label for="subject">Schulfach</label>
+          <select id="subject">
+            <option>Mathematik</option>
+            <option>Deutsch</option>
+            <option>Geographie</option>
+            <option>Chemie</option>
+            <option>Musik</option>
+            <option>Sport</option>
+            <option>Spanisch</option>
+            <option>Englisch</option>
+            <option>Evangelische Religion</option>
+            <option>Biologie</option>
+            <option>Politik und Gesellschaft</option>
+            <option>Geschichte</option>
+          </select>
+        </div>
 
-    <div id="answer" class="status" aria-live="polite">
-      ATELIER AI ist bereit.
+        <div class="field">
+          <label for="level">Schwierigkeitsgrad</label>
+          <select id="level">
+            <option value="grundlegend">Grundlegend</option>
+            <option value="mittel">Mittel</option>
+            <option value="anspruchsvoll">Anspruchsvoll</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="topic">Thema oder Lerngebiet</label>
+        <input id="topic" placeholder="z. B. Zellatmung, Integralrechnung, Weimarer Republik">
+      </div>
+
+      <div class="field">
+        <label for="count">Anzahl der Übungen</label>
+        <select id="count">
+          <option value="3">3 Übungen</option>
+          <option value="5">5 Übungen</option>
+          <option value="8" selected>8 Übungen</option>
+          <option value="10">10 Übungen</option>
+          <option value="12">12 Übungen</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>
+          <input type="checkbox" id="useMaterials" checked style="width:auto">
+          Eigene Unterrichtsmaterialien berücksichtigen
+        </label>
+        <p class="muted">
+          Gespeicherte Materialien des ausgewählten Fachs
+          werden bei der Erstellung berücksichtigt.
+        </p>
+      </div>
+
+      <button class="button" id="generate">
+        Lernübungen erstellen
+      </button>
+
+      <div id="generationStatus" class="status" aria-live="polite">
+        Wähle ein Format und gib dein Thema ein.
+      </div>
+    </div>
+
+    <div id="exerciseArea" class="panel hidden">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Deine Lerneinheit</p>
+          <h2 id="exerciseHeading">Übungen</h2>
+        </div>
+        <span class="muted" id="exerciseCounter"></span>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-fill" id="exerciseProgress"></div>
+      </div>
+
+      <div id="exerciseContent"></div>
+
+      <div class="button-row">
+        <button class="button secondary" id="previousExercise">
+          Zurück
+        </button>
+        <button class="button" id="nextExercise">
+          Weiter
+        </button>
+      </div>
+
+      <div id="exerciseSummary" class="status hidden"></div>
     </div>
   </section>
 
-  <section>
-    <h2>Externe Recherche</h2>
+  <section id="page-materials" class="hidden">
+    <div class="hero">
+      <p class="eyebrow">Deine Wissensbasis</p>
+      <h1>Deine Materialien, <em>dein Wissen.</em></h1>
+      <p class="intro">
+        Importiere Unterrichtsmaterialien und nutze sie
+        als Grundlage für deine persönlichen Lernübungen.
+      </p>
+    </div>
 
-    <p id="researchStatus" class="muted">
-      Noch keine Recherche durchgeführt.
-    </p>
+    <div class="panel">
+      <h2>Material importieren</h2>
+      <p class="muted">Unterstützt werden PDF und TXT.</p>
 
-    <div id="sources"></div>
+      <div class="field">
+        <label for="materialSubject">Schulfach</label>
+        <select id="materialSubject">
+          <option>Mathematik</option>
+          <option>Deutsch</option>
+          <option>Geographie</option>
+          <option>Chemie</option>
+          <option>Musik</option>
+          <option>Sport</option>
+          <option>Spanisch</option>
+          <option>Englisch</option>
+          <option>Evangelische Religion</option>
+          <option>Biologie</option>
+          <option>Politik und Gesellschaft</option>
+          <option>Geschichte</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="materialFile">Datei auswählen</label>
+        <input type="file" id="materialFile" accept=".pdf,.txt,application/pdf,text/plain">
+      </div>
+
+      <button class="button" id="importMaterial">
+        Material importieren
+      </button>
+
+      <div id="materialStatus" class="status">
+        Noch keine Datei importiert.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-heading">
+        <h2>Gespeicherte Inhalte</h2>
+        <button class="button secondary" id="refreshMaterials">
+          Aktualisieren
+        </button>
+      </div>
+      <div id="materialList" class="muted">
+        Materialien werden geladen ...
+      </div>
+    </div>
   </section>
 
-  <footer class="muted">
-    <p>ATELIER AI · Version 0.4</p>
-    <p>Lokale KI und persönliche Wissensbasis.</p>
-  </footer>
+  <section id="page-model" class="hidden">
+    <div class="hero">
+      <p class="eyebrow">Lokale KI</p>
+      <h1>Dein Modell, <em>deine Kontrolle.</em></h1>
+      <p class="intro">
+        ATELIER AI verarbeitet deine Lernanfragen lokal
+        über WebLLM und WebGPU.
+      </p>
+    </div>
+
+    <div class="panel">
+      <p class="eyebrow">Gerätestatus</p>
+      <h2>WebGPU</h2>
+      <div id="gpuStatus" class="status">
+        WebGPU wird geprüft ...
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="eyebrow">Modellverwaltung</p>
+      <h2>Lokales KI-Modell</h2>
+
+      <div class="field" style="margin-top:20px">
+        <label for="model">KI-Modell auswählen</label>
+        <select id="model" disabled>
+          <option value="">Modellliste noch nicht geladen</option>
+        </select>
+      </div>
+
+      <div class="button-row">
+        <button id="loadModels" class="button secondary">
+          Modelle suchen
+        </button>
+        <button id="loadModel" class="button" disabled>
+          Modell laden
+        </button>
+        <button id="unloadModel" class="button secondary" disabled>
+          Entladen
+        </button>
+      </div>
+
+      <progress id="progress" value="0" max="100" style="width:100%;margin-top:20px"></progress>
+
+      <div id="modelStatus" class="status">
+        Noch kein Modell geladen.
+      </div>
+    </div>
+  </section>
 
 </main>
 
+<footer>
+  <div class="shell">
+    ATELIER AI · Independent Learning Space · Gymnasium Bayern
+  </div>
+</footer>
+
 <script type="module">
-  import { atelierEngine } from "./src/core/engine.js";
   import { atelierAI } from "./src/core/ai.js";
+  import { learningStudio } from "./src/core/learning-studio.js";
   import { materialImporter } from "./src/core/material-import.js";
   import { knowledgeBase } from "./src/core/knowledge.js";
 
   const $ = id => document.getElementById(id);
 
-  const modelSelect = $("model");
-  const loadModelsButton = $("loadModels");
-  const loadButton = $("loadModel");
-  const unloadButton = $("unloadModel");
-  const askButton = $("ask");
-  const importButton = $("importMaterial");
+  let selectedFormat = null;
+  let currentSet = null;
+  let currentIndex = 0;
+  let revealed = false;
+  let selectedAnswers = {};
+  let completed = {};
 
-  function showStatus(message) {
-    $("modelStatus").textContent = message;
-  }
-
-  function updateModelButtons() {
-    const status = atelierAI.getStatus().localModel;
-
-    loadButton.disabled =
-      status.ready || status.loading || !modelSelect.value;
-
-    unloadButton.disabled = !status.ready;
-    modelSelect.disabled = status.ready || status.loading;
-    loadModelsButton.disabled = status.loading;
-
-    if (status.ready) {
-      showStatus("Modell geladen: " + status.model);
+  const formatDetails = {
+    flashcards: {
+      title: "Karteikarten",
+      description: "Lerne mit präzisen Fragen und verständlichen Antworten."
+    },
+    multipleChoice: {
+      title: "Multiple Choice",
+      description: "Überprüfe dein Wissen mit vier Antwortmöglichkeiten."
+    },
+    cloze: {
+      title: "Lückentexte",
+      description: "Ergänze fehlende Begriffe und Zusammenhänge."
     }
+  };
+
+  function showPage(name) {
+    document.querySelectorAll("main > section").forEach(section => {
+      section.classList.add("hidden");
+    });
+
+    $("page-" + name).classList.remove("hidden");
+
+    document.querySelectorAll("nav button").forEach(button => {
+      button.classList.toggle("active", button.dataset.page === name);
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    if (name === "materials") refreshMaterials();
   }
 
-  async function checkGPU() {
-    try {
-      const result = await atelierAI.checkSupport();
+  document.querySelectorAll("[data-page]").forEach(button => {
+    button.addEventListener("click", () => showPage(button.dataset.page));
+  });
 
-      $("gpuStatus").textContent = result.reason;
+  document.querySelectorAll("[data-open]").forEach(button => {
+    button.addEventListener("click", () => showPage(button.dataset.open));
+  });
 
-      if (!result.supported) {
-        showStatus("Lokale KI derzeit nicht verfügbar.");
-      }
-    } catch (error) {
-      $("gpuStatus").textContent = error.message;
-    }
-  }
+  document.querySelectorAll("[data-format]").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedFormat = button.dataset.format;
+
+      $("formatTitle").textContent = formatDetails[selectedFormat].title;
+      $("formatDescription").textContent =
+        formatDetails[selectedFormat].description;
+
+      $("generationStatus").textContent =
+        "Format ausgewählt: " + formatDetails[selectedFormat].title;
+
+      document.querySelectorAll("[data-format]").forEach(tile => {
+        tile.style.outline =
+          tile.dataset.format === selectedFormat
+            ? "2px solid #857866"
+            : "none";
+      });
+
+      $("formatTitle").scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    });
+  });
 
   async function refreshMaterials() {
     const list = $("materialList");
-    const subject = $("materialSubject").value;
-
     list.replaceChildren();
 
     try {
-      const materials = await knowledgeBase.getAll(subject);
+      const materials = await knowledgeBase.getAll(
+        $("materialSubject").value
+      );
 
       if (!materials.length) {
         list.textContent =
@@ -357,54 +889,43 @@
         return;
       }
 
-      for (const material of materials) {
+      materials.forEach(material => {
         const item = document.createElement("div");
         item.className = "material-item";
 
         const title = document.createElement("strong");
         title.textContent = material.title;
 
-        const details = document.createElement("p");
-        details.className = "muted";
-        details.textContent =
+        const detail = document.createElement("p");
+        detail.className = "muted";
+        detail.textContent =
           material.subject + " · " +
-          Math.round((material.content || "").length / 1000) +
-          " Tsd. Zeichen";
+          (material.content || "").length + " Zeichen";
 
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "delete";
-        deleteButton.textContent = "Material löschen";
+        const remove = document.createElement("button");
+        remove.className = "button secondary";
+        remove.textContent = "Löschen";
+        remove.style.marginTop = "8px";
 
-        deleteButton.addEventListener("click", async () => {
+        remove.addEventListener("click", async () => {
           if (!confirm("Dieses Material wirklich löschen?")) return;
 
-          try {
-            await knowledgeBase.remove(material.id);
-            $("materialStatus").textContent =
-              "Material wurde gelöscht.";
-            await refreshMaterials();
-          } catch (error) {
-            $("materialStatus").textContent =
-              "Löschen fehlgeschlagen: " + error.message;
-          }
+          await knowledgeBase.remove(material.id);
+          refreshMaterials();
         });
 
-        item.append(title, details, deleteButton);
+        item.append(title, detail, remove);
         list.appendChild(item);
-      }
+      });
     } catch (error) {
-      list.textContent =
-        "Materialliste konnte nicht geladen werden: " +
-        error.message;
+      list.textContent = "Fehler: " + error.message;
     }
   }
 
-  $("materialSubject").addEventListener("change", refreshMaterials);
   $("refreshMaterials").addEventListener("click", refreshMaterials);
 
-  importButton.addEventListener("click", async () => {
+  $("importMaterial").addEventListener("click", async () => {
     const file = $("materialFile").files[0];
-    const subject = $("materialSubject").value;
 
     if (!file) {
       $("materialStatus").textContent =
@@ -412,15 +933,14 @@
       return;
     }
 
-    importButton.disabled = true;
-    $("materialStatus").textContent =
-      "Datei wird verarbeitet ...";
+    $("importMaterial").disabled = true;
+    $("materialStatus").textContent = "Datei wird verarbeitet ...";
 
     try {
       const material = await materialImporter.importFile(file);
 
       await knowledgeBase.add({
-        subject,
+        subject: $("materialSubject").value,
         title: material.title,
         content: material.content,
         source: "Lokaler Dateiimport"
@@ -429,6 +949,7 @@
       $("materialStatus").textContent =
         "Material erfolgreich gespeichert.";
 
+      $("materialStatus").className = "status success";
       $("materialFile").value = "";
 
       await refreshMaterials();
@@ -436,164 +957,406 @@
     } catch (error) {
       $("materialStatus").textContent =
         "Import fehlgeschlagen: " + error.message;
+      $("materialStatus").className = "status error";
     } finally {
-      importButton.disabled = false;
+      $("importMaterial").disabled = false;
     }
   });
 
-  loadModelsButton.addEventListener("click", async () => {
-    loadModelsButton.disabled = true;
-    showStatus("Modellliste wird geladen ...");
+  $("materialSubject").addEventListener("change", refreshMaterials);
 
-    try {
-      const models = await atelierAI.getAvailableModels();
-
-      modelSelect.innerHTML = "";
-
-      if (!models.length) {
-        throw new Error("Keine passenden kleinen Modelle gefunden.");
-      }
-
-      for (const model of models) {
-        const option = document.createElement("option");
-        option.value = model.id;
-        option.textContent = model.name;
-        modelSelect.appendChild(option);
-      }
-
-      modelSelect.disabled = false;
-      showStatus(models.length + " passende Modelle gefunden.");
-
-    } catch (error) {
-      showStatus("Fehler: " + error.message);
-    } finally {
-      loadModelsButton.disabled = false;
-      updateModelButtons();
-    }
-  });
-
-  loadButton.addEventListener("click", async () => {
-    const modelId = modelSelect.value;
-
-    if (!modelId) {
-      showStatus("Bitte zuerst ein Modell auswählen.");
+  $("generate").addEventListener("click", async () => {
+    if (!selectedFormat) {
+      $("generationStatus").textContent =
+        "Bitte zuerst ein Lernformat auswählen.";
       return;
     }
 
-    loadButton.disabled = true;
-    modelSelect.disabled = true;
+    const topic = $("topic").value.trim();
 
-    $("progress").value = 0;
-    showStatus("Modell wird geladen. Bitte warten ...");
+    if (!topic) {
+      $("generationStatus").textContent =
+        "Bitte ein Thema eingeben.";
+      return;
+    }
+
+    $("generate").disabled = true;
+    $("generationStatus").textContent =
+      "Die KI erstellt deine Übungen. Das kann etwas dauern ...";
 
     try {
-      await atelierAI.loadModel(modelId, report => {
-        $("progress").value = report.progress;
-        showStatus(
-          report.text + " (" + report.progress + "%)"
-        );
+      currentSet = await learningStudio.generate({
+        format: selectedFormat,
+        subject: $("subject").value,
+        topic,
+        count: Number($("count").value),
+        level: $("level").value,
+        useMaterials: $("useMaterials").checked
       });
 
-      showStatus("Lokales KI-Modell erfolgreich geladen.");
+      currentIndex = 0;
+      revealed = false;
+      selectedAnswers = {};
+      completed = {};
+
+      $("generationStatus").textContent =
+        currentSet.items.length + " Übungen wurden erstellt. " +
+        currentSet.materialCount + " passende Materialien berücksichtigt.";
+
+      $("generationStatus").className = "status success";
+
+      $("exerciseArea").classList.remove("hidden");
+      $("exerciseHeading").textContent =
+        formatDetails[selectedFormat].title;
+
+      renderExercise();
+
+      $("exerciseArea").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
 
     } catch (error) {
-      showStatus("Laden fehlgeschlagen: " + error.message);
+      $("generationStatus").textContent =
+        "Fehler: " + error.message;
+      $("generationStatus").className = "status error";
+    } finally {
+      $("generate").disabled = false;
+    }
+  });
+
+  function renderExercise() {
+    if (!currentSet) return;
+
+    const item = currentSet.items[currentIndex];
+    const area = $("exerciseContent");
+
+    area.replaceChildren();
+
+    $("exerciseCounter").textContent =
+      (currentIndex + 1) + " / " + currentSet.items.length;
+
+    $("exerciseProgress").style.width =
+      ((currentIndex + 1) / currentSet.items.length * 100) + "%";
+
+    $("previousExercise").disabled = currentIndex === 0;
+
+    $("nextExercise").textContent =
+      currentIndex === currentSet.items.length - 1
+        ? "Einheit abschließen"
+        : "Weiter";
+
+    $("exerciseSummary").classList.add("hidden");
+
+    if (currentSet.format === "flashcards") {
+      renderFlashcard(item, area);
+    }
+
+    if (currentSet.format === "multipleChoice") {
+      renderMultipleChoice(item, area);
+    }
+
+    if (currentSet.format === "cloze") {
+      renderCloze(item, area);
+    }
+  }
+
+  function renderFlashcard(item, area) {
+    const card = document.createElement("div");
+    card.className = "flashcard";
+
+    const content = document.createElement("div");
+    const text = document.createElement("p");
+
+    text.textContent = revealed ? item.answer : item.question;
+
+    const hint = document.createElement("small");
+    hint.textContent = revealed
+      ? "Antwort · Zum Weiterlernen auf Weiter tippen"
+      : "Frage · Tippen zum Aufdecken";
+
+    content.append(text, hint);
+    card.appendChild(content);
+
+    card.addEventListener("click", () => {
+      revealed = !revealed;
+      renderExercise();
+    });
+
+    area.appendChild(card);
+
+    if (revealed && !completed[currentIndex]) {
+      const button = document.createElement("button");
+      button.className = "button soft";
+      button.textContent = "Als gelernt markieren";
+
+      button.addEventListener("click", () => {
+        completed[currentIndex] = true;
+        button.textContent = "Als gelernt markiert";
+        button.disabled = true;
+      });
+
+      area.appendChild(button);
+    }
+  }
+
+  function renderMultipleChoice(item, area) {
+    const question = document.createElement("div");
+    question.className = "exercise-question";
+    question.textContent = item.question;
+    area.appendChild(question);
+
+    item.options.forEach((option, index) => {
+      const button = document.createElement("button");
+      button.className = "answer";
+      button.textContent = option;
+
+      if (selectedAnswers[currentIndex] === index) {
+        button.classList.add("selected");
+      }
+
+      if (completed[currentIndex]) {
+        button.disabled = true;
+
+        if (index === item.correctIndex) {
+          button.classList.add("correct");
+        } else if (selectedAnswers[currentIndex] === index) {
+          button.classList.add("wrong");
+        }
+      }
+
+      button.addEventListener("click", () => {
+        if (completed[currentIndex]) return;
+
+        selectedAnswers[currentIndex] = index;
+        completed[currentIndex] = true;
+        renderExercise();
+      });
+
+      area.appendChild(button);
+    });
+
+    if (completed[currentIndex]) {
+      const feedback = document.createElement("div");
+      feedback.className = "feedback";
+
+      const correct = selectedAnswers[currentIndex] === item.correctIndex;
+
+      feedback.textContent =
+        (correct ? "Richtig. " : "Leider nicht richtig. ") +
+        item.explanation;
+
+      area.appendChild(feedback);
+    }
+  }
+
+  function renderCloze(item, area) {
+    const container = document.createElement("div");
+    container.className = "exercise-question";
+
+    const parts = item.text.split("{{LUECKE}}");
+    const inputs = [];
+
+    parts.forEach((part, index) => {
+      container.appendChild(document.createTextNode(part));
+
+      if (index < item.answers.length) {
+        const input = document.createElement("input");
+        input.placeholder = "Deine Lösung";
+        input.style.width = "auto";
+        input.style.minWidth = "110px";
+        input.style.maxWidth = "190px";
+        input.style.margin = "5px";
+        input.disabled = Boolean(completed[currentIndex]);
+
+        if (completed[currentIndex]) {
+          input.value = selectedAnswers[currentIndex]?.[index] || "";
+        }
+
+        inputs.push(input);
+        container.appendChild(input);
+      }
+    });
+
+    area.appendChild(container);
+
+    if (!completed[currentIndex]) {
+      const check = document.createElement("button");
+      check.className = "button";
+      check.textContent = "Antworten überprüfen";
+      check.style.marginTop = "15px";
+
+      check.addEventListener("click", () => {
+        const values = inputs.map(input => input.value.trim());
+
+        if (values.some(value => !value)) {
+          alert("Bitte alle Lücken ausfüllen.");
+          return;
+        }
+
+        selectedAnswers[currentIndex] = values;
+        completed[currentIndex] = true;
+        renderExercise();
+      });
+
+      area.appendChild(check);
+    } else {
+      const values = selectedAnswers[currentIndex] || [];
+      const correctCount = item.answers.filter(
+        (answer, index) =>
+          answer.toLowerCase().trim() ===
+          (values[index] || "").toLowerCase().trim()
+      ).length;
+
+      const feedback = document.createElement("div");
+      feedback.className = "feedback";
+
+      feedback.textContent =
+        correctCount + " von " + item.answers.length +
+        " Lücken richtig. Lösungen: " +
+        item.answers.join(", ") +
+        ". " + item.explanation;
+
+      area.appendChild(feedback);
+    }
+  }
+
+  $("previousExercise").addEventListener("click", () => {
+    if (currentIndex > 0) {
+      currentIndex--;
+      revealed = false;
+      renderExercise();
+    }
+  });
+
+  $("nextExercise").addEventListener("click", () => {
+    if (!currentSet) return;
+
+    if (currentIndex < currentSet.items.length - 1) {
+      currentIndex++;
+      revealed = false;
+      renderExercise();
+      return;
+    }
+
+    const total = currentSet.items.length;
+    const done = Object.keys(completed).length;
+
+    $("exerciseSummary").classList.remove("hidden");
+    $("exerciseSummary").textContent =
+      "Lerneinheit beendet. " + done +
+      " von " + total + " Übungen bearbeitet.";
+
+    $("nextExercise").disabled = true;
+    $("nextExercise").textContent = "Abgeschlossen";
+  });
+
+  async function checkGPU() {
+    try {
+      const result = await atelierAI.checkSupport();
+
+      $("gpuStatus").textContent = result.reason;
+      $("gpuStatus").className =
+        result.supported ? "status success" : "status error";
+    } catch (error) {
+      $("gpuStatus").textContent = error.message;
+      $("gpuStatus").className = "status error";
+    }
+  }
+
+  function updateModelButtons() {
+    const status = atelierAI.getStatus().localModel;
+
+    $("loadModel").disabled =
+      status.ready || status.loading || !$("model").value;
+
+    $("unloadModel").disabled = !status.ready;
+    $("model").disabled = status.ready || status.loading;
+    $("loadModels").disabled = status.loading;
+
+    if (status.ready) {
+      $("modelStatus").textContent =
+        "Modell geladen: " + status.model;
+    }
+  }
+
+  $("loadModels").addEventListener("click", async () => {
+    $("loadModels").disabled = true;
+    $("modelStatus").textContent = "Modellliste wird geladen ...";
+
+    try {
+      const models = await atelierAI.getAvailableModels();
+      const select = $("model");
+
+      select.replaceChildren();
+
+      models.forEach(model => {
+        const option = document.createElement("option");
+        option.value = model.id;
+        option.textContent = model.name;
+        select.appendChild(option);
+      });
+
+      if (!models.length) {
+        throw new Error("Keine passenden Modelle gefunden.");
+      }
+
+      select.disabled = false;
+      $("modelStatus").textContent =
+        models.length + " Modelle gefunden.";
+
+    } catch (error) {
+      $("modelStatus").textContent = "Fehler: " + error.message;
+    } finally {
+      $("loadModels").disabled = false;
+      updateModelButtons();
+    }
+  });
+
+  $("model").addEventListener("change", updateModelButtons);
+
+  $("loadModel").addEventListener("click", async () => {
+    $("loadModel").disabled = true;
+    $("model").disabled = true;
+
+    $("modelStatus").textContent = "Modell wird geladen ...";
+    $("progress").value = 0;
+
+    try {
+      await atelierAI.loadModel(
+        $("model").value,
+        report => {
+          $("progress").value = report.progress;
+          $("modelStatus").textContent =
+            report.text + " (" + report.progress + "%)";
+        }
+      );
+
+      $("modelStatus").textContent = "Modell erfolgreich geladen.";
+      $("modelStatus").className = "status success";
+
+    } catch (error) {
+      $("modelStatus").textContent =
+        "Fehler: " + error.message;
+      $("modelStatus").className = "status error";
     } finally {
       updateModelButtons();
     }
   });
 
-  unloadButton.addEventListener("click", async () => {
-    unloadButton.disabled = true;
+  $("unloadModel").addEventListener("click", async () => {
+    $("unloadModel").disabled = true;
 
     try {
       await atelierAI.unloadModel();
       $("progress").value = 0;
-      showStatus("Modell wurde entladen.");
+      $("modelStatus").textContent = "Modell entladen.";
+      $("modelStatus").className = "status";
     } catch (error) {
-      showStatus("Fehler: " + error.message);
-    } finally {
-      updateModelButtons();
-    }
-  });
-
-  askButton.addEventListener("click", async () => {
-    const question = $("question").value.trim();
-    const subject = $("subject").value;
-    const mode = $("mode").value;
-
-    if (!question) {
-      $("answer").textContent =
-        "Bitte gib zuerst eine Frage ein.";
-      return;
+      $("modelStatus").textContent = error.message;
     }
 
-    if (!atelierAI.getStatus().localModel.ready) {
-      $("answer").textContent =
-        "Bitte lade zuerst ein lokales KI-Modell.";
-      return;
-    }
-
-    askButton.disabled = true;
-    $("answer").textContent =
-      "ATELIER AI bearbeitet deine Anfrage ...";
-
-    $("sources").replaceChildren();
-    $("researchStatus").textContent =
-      "Recherche wird geprüft ...";
-
-    try {
-      const result = await atelierEngine.learn({
-        moduleId: "tutor",
-        subject,
-        task: mode,
-        question
-      });
-
-      const aiResult = result.result;
-
-      $("answer").textContent =
-        aiResult.answer ||
-        aiResult.message ||
-        "Keine Antwort erhalten.";
-
-      $("researchStatus").textContent =
-        "Recherche: " + result.research.status;
-
-      for (const source of result.externalSources) {
-        const item = document.createElement("div");
-        item.className = "source";
-
-        const title = document.createElement("strong");
-        title.textContent = source.title;
-
-        item.appendChild(title);
-        item.appendChild(document.createElement("br"));
-
-        const link = document.createElement("a");
-        link.href = source.url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = "Quelle öffnen";
-
-        item.appendChild(link);
-        $("sources").appendChild(item);
-      }
-
-      if (result.research.error) {
-        $("researchStatus").textContent +=
-          " – " + result.research.error;
-      }
-
-    } catch (error) {
-      $("answer").textContent =
-        "Fehler: " + error.message;
-
-      $("researchStatus").textContent =
-        "Die Anfrage konnte nicht abgeschlossen werden.";
-    } finally {
-      askButton.disabled = false;
-    }
+    updateModelButtons();
   });
 
   checkGPU();
