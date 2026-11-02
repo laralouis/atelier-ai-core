@@ -166,6 +166,15 @@ export class LocalModel {
     const webllm = await this.loadWebLLM();
 
     const models = webllm.prebuiltAppConfig.model_list || [];
+    const diagnostics = {
+  webllmVersion: webllm.version || "unbekannt",
+  totalModels: models.length,
+  models3B: models
+    .filter(model => /3B/i.test(model.model_id))
+    .map(model => model.model_id)
+};
+
+window.ATELIER_DIAGNOSTICS = diagnostics;
 
 console.log("Anzahl registrierter Modelle:", models.length);
 console.log("3B-Modelle:", models.filter(model => /3B/i.test(model.model_id)).map(model => model.model_id));
