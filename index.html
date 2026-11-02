@@ -192,8 +192,8 @@ h2{font-size:32px}
     <p class="eyebrow">ATELIER · Lernassistent</p>
     <h1>Verstehen, <em>statt auswendig lernen.</em></h1>
     <p class="intro">
-      Stelle fachliche Fragen, lasse dir Zusammenhänge erklären
-      und arbeite Schritt für Schritt an schwierigen Themen.
+      Stelle fachliche Fragen, vertiefe Zusammenhänge und arbeite
+      Schritt für Schritt an schwierigen Themen.
     </p>
   </div>
 
@@ -230,27 +230,42 @@ h2{font-size:32px}
       </div>
     </div>
 
+    <div class="chat-header">
+      <h3>Gespräch</h3>
+      <button class="button secondary" id="clearTutorChat" type="button">
+        Verlauf löschen
+      </button>
+    </div>
+
+    <div id="tutorChat" class="tutor-chat" aria-live="polite">
+      <div class="chat-empty">
+        <p>Dein Gespräch beginnt hier.</p>
+        <span>Stelle eine Frage zu einem Unterrichtsthema.</span>
+      </div>
+    </div>
+
     <div class="field">
-      <label for="tutorQuestion">Deine Frage</label>
+      <label for="tutorQuestion">Deine Nachricht</label>
       <textarea id="tutorQuestion"
-        placeholder="Beschreibe, was du verstehen möchtest ..."></textarea>
+        rows="3"
+        placeholder="Stelle eine Frage oder knüpfe an die vorherige Antwort an ..."></textarea>
     </div>
 
     <div class="field">
       <label>
-        <input type="checkbox" id="tutorMaterials" checked
-          style="width:auto">
+        <input type="checkbox" id="tutorMaterials" checked style="width:auto">
         Eigene Unterrichtsmaterialien berücksichtigen
       </label>
     </div>
 
-    <button class="button" id="askTutor">Frage stellen</button>
-
-    <div id="tutorStatus" class="status">
-      Dein Lernassistent wartet auf deine Frage.
+    <div class="chat-footer">
+      <div id="tutorStatus" class="status">
+        Dein Lernassistent wartet auf deine Nachricht.
+      </div>
+      <button class="button" id="askTutor" type="button">
+        Nachricht senden
+      </button>
     </div>
-
-    <div id="tutorResult" class="result-text hidden"></div>
   </div>
 </section>
 <!-- PROBEPRÜFUNGEN -->
