@@ -6,8 +6,7 @@
  * Serielle Verwaltung aller WebLLM-Modellzugriffe.
  */
 
-const WEBLLM_URL = "https://esm.sh/@mlc-ai/web-llm@0.2.79";
-
+const WEBLLM_URL = "https://esm.run/@mlc-ai/web-llm@0.2.87";
 const MODEL_PATTERN = /(0\.5B|0\.6B|1B)(?=[-_])/i;
 
 const MAX_CONTEXT_CHARS = 4500;
