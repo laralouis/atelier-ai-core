@@ -178,72 +178,37 @@ export class LearningStudio {
       .replace("{count}", String(amount));
 
     const prompt = `
-Du bist der Lernassistent von ATELIER AI.
+Du bist ein Lernassistent für das Gymnasium Bayern (Jahrgangsstufe 12/13).
 
-AUFGABE:
-Erstelle Lernübungen für das Gymnasium Bayern,
-Jahrgangsstufe 12/13.
+Erstelle genau ${amount} Lernaufgaben.
 
-FACH: ${subject}
-THEMA: ${topic}
-NIVEAU: ${level}
+Fach: ${subject}
+Thema: ${topic}
+Niveau: ${level}
+Aufgabenformat: ${format}
 
-${formatInstruction}
+WICHTIG:
+- Erstelle ausschließlich Aufgaben des angegebenen Formats.
+- Verwende die bereitgestellten Materialien als Grundlage.
+- Erfinde keine zusätzlichen Aufgabenformate.
+- Gib ausschließlich ein gültiges JSON-Objekt zurück.
+- Keine Erklärungen außerhalb des JSON.
+- Verwende doppelte Anführungszeichen für alle JSON-Schlüssel und Textwerte.
+- Keine Kommentare, keine Markdown-Codeblöcke.
 
-INHALTLICHE REGELN:
-- Arbeite fachlich korrekt.
-- Orientiere dich vorrangig an den bereitgestellten Unterrichtsmaterialien.
-- Ergänze bei Bedarf gesichertes Fachwissen.
-- Erfinde keine Quellen oder Seitenangaben.
-- Formuliere eindeutige Fragen.
-- Vermeide unnötig einfache oder doppeldeutige Aufgaben.
-- Verwende bei Bedarf passende Fachbegriffe.
+JSON-STRUKTUR:
 
-AUSGABE:
-Antworte ausschließlich mit einem gültigen JSON-Objekt.
-Keine Markdown-Codeblöcke und keine Einleitung.
+Für flashcards:
+{"items":[{"question":"Frage","answer":"Antwort"}]}
 
-Für Karteikarten:
-{
-  "items": [
-    {
-      "question": "Frage",
-      "answer": "Antwort"
-    }
-  ]
-}
+Für multipleChoice:
+{"items":[{"question":"Frage","options":["A","B","C","D"],"correctIndex":0,"explanation":"Erklärung"}]}
 
-Für Multiple Choice:
-{
-  "items": [
-    {
-      "question": "Frage",
-      "options": [
-        "Antwort A",
-        "Antwort B",
-        "Antwort C",
-        "Antwort D"
-      ],
-      "correctIndex": 0,
-      "explanation": "Erklärung"
-    }
-  ]
-}
+Für cloze:
+{"items":[{"text":"Satz mit {{LUECKE}}","answers":["Lösung"],"explanation":"Erklärung"}]}
 
-Für Lückentexte:
-{
-  "items": [
-    {
-      "text": "Ein Satz mit {{LUECKE}}.",
-      "answers": ["Lösung"],
-      "explanation": "Erklärung"
-    }
-  ]
-}
-
-Erstelle genau ${amount} Aufgaben.
+Erstelle genau ${amount} Aufgaben im Format ${format}.
 `;
-
     const request = atelierAI.createRequest({
       subject,
       mode: "quiz",
