@@ -1,10 +1,13 @@
-// ATELIER AI – Deployment-Test
+
 /**
  * ATELIER AI – Learning Studio
- * Version 1.0
+ * Version 2.0
  *
- * Erstellt und bewertet interaktive Lernübungen
- * mit dem lokalen KI-Modell.
+ * Hybride Generierung:
+ * - Standardmäßig Einzelgenerierung
+ * - Validierung jeder einzelnen Übung
+ * - Ein Wiederholungsversuch bei fehlerhaften Antworten
+ * - Vorbereitet für spätere Bündelgenerierung
  */
 
 import { atelierAI } from "./ai.js";
@@ -14,33 +17,40 @@ const FORMATS = {
   flashcards: {
     label: "Karteikarten",
     instruction: `
-Erstelle genau {count} hochwertige Karteikarten.
-Jede Karte benötigt eine präzise Frage und eine fachlich korrekte Antwort.
-Die Antworten sollen verständlich, aber nicht unnötig lang sein.
-`
+Erstelle genau eine hochwertige Karteikarte.
+Die Karte benötigt eine präzise Frage und eine fachlich korrekte Antwort.
+Die Antwort soll verständlich und nicht unnötig lang sein.
+`,
+    schema: `{"items":[{"question":"Frage","answer":"Antwort"}]}`
   },
 
   multipleChoice: {
     label: "Multiple Choice",
     instruction: `
-Erstelle genau {count} Multiple-Choice-Fragen.
-Jede Frage benötigt vier Antwortmöglichkeiten.
+Erstelle genau eine Multiple-Choice-Frage.
+Sie benötigt vier Antwortmöglichkeiten.
 Genau eine Antwort muss richtig sein.
-Erkläre anschließend, warum diese Antwort richtig ist.
-`
+Gib den Index der richtigen Antwort an. Der erste Index ist 0.
+Erkläre anschließend kurz, warum die Antwort richtig ist.
+`,
+    schema: `{"items":[{"question":"Frage","options":["A","B","C","D"],"correctIndex":0,"explanation":"Erklärung"}]}`
   },
 
   cloze: {
     label: "Lückentexte",
     instruction: `
-Erstelle genau {count} Lückentext-Aufgaben.
-Jede Aufgabe enthält einen fachlich sinnvollen Satz oder kurzen Absatz.
-Verwende die Schreibweise {{LUECKE}} für jede auszufüllende Stelle.
-Gib die korrekten Lösungen und eine Erklärung an.
-`
+Erstelle genau eine Lückentext-Aufgabe.
+Sie enthält einen fachlich sinnvollen Satz oder kurzen Absatz.
+Verwende {{LUECKE}} für jede auszufüllende Stelle.
+Gib die korrekten Lösungen und eine kurze Erklärung an.
+`,
+    schema: `{"items":[{"text":"Satz mit {{LUECKE}}","answers":["Lösung"],"explanation":"Erklärung"}]}`
   }
 };
 
+/**
+ * Extrahiert ein JSON-Objekt aus der KI-Antwort.
+ */
 function extractJSON(text) {
   const cleaned = String(text || "")
     .replace(/```json/gi, "")
@@ -51,32 +61,23 @@ function extractJSON(text) {
   const end = cleaned.lastIndexOf("}");
 
   if (start === -1 || end === -1 || end <= start) {
-  console.error("ATELIER AI – Ungültige KI-Antwort:", text);
-
-  throw new Error(
-    "KI-Ausgabe ist kein gültiges JSON. Empfangene Antwort: " +
-    String(text || "Keine Antwort").slice(0, 500)
-  );
-}
+    throw new Error(
+      "Die KI hat kein JSON-Objekt zurückgegeben."
+    );
+  }
 
   try {
     return JSON.parse(cleaned.slice(start, end + 1));
   } catch (error) {
-    console.error("ATELIER AI – JSON-Fehler:", error);
-    console.error(
-      "ATELIER AI – Empfangener JSON-Text:",
-      cleaned.slice(start, end + 1)
-    );
-
-        throw new Error(
-      "JSON-Fehler: " +
-      error.message +
-      " | KI-Antwort: " +
-      cleaned.slice(start, Math.min(end + 1, start + 700))
+    throw new Error(
+      "Ungültiges JSON: " + error.message
     );
   }
 }
 
+/**
+ * Prüft und vereinheitlicht die Übungen.
+ */
 function validateItems(format, items) {
   if (!Array.isArray(items) || !items.length) {
     throw new Error("Die KI hat keine Übungen erstellt.");
@@ -88,24 +89,35 @@ function validateItems(format, items) {
     }
 
     if (format === "flashcards") {
-      if (!item.question || !item.answer) {
+      if (
+        typeof item.question !== "string" ||
+        !item.question.trim() ||
+        typeof item.answer !== "string" ||
+        !item.answer.trim()
+      ) {
         throw new Error(`Karte ${index + 1} ist unvollständig.`);
       }
 
       return {
-        question: String(item.question),
-        answer: String(item.answer)
+        question: item.question.trim(),
+        answer: item.answer.trim()
       };
     }
 
     if (format === "multipleChoice") {
       if (
-        !item.question ||
+        typeof item.question !== "string" ||
+        !item.question.trim() ||
         !Array.isArray(item.options) ||
         item.options.length !== 4 ||
+        !item.options.every(
+          option => typeof option === "string" && option.trim()
+        ) ||
         !Number.isInteger(item.correctIndex) ||
         item.correctIndex < 0 ||
-        item.correctIndex > 3
+        item.correctIndex > 3 ||
+        typeof item.explanation !== "string" ||
+        !item.explanation.trim()
       ) {
         throw new Error(
           `Multiple-Choice-Frage ${index + 1} ist unvollständig.`
@@ -113,26 +125,34 @@ function validateItems(format, items) {
       }
 
       return {
-        question: String(item.question),
-        options: item.options.map(String),
+        question: item.question.trim(),
+        options: item.options.map(option => option.trim()),
         correctIndex: item.correctIndex,
-        explanation: String(item.explanation || "")
+        explanation: item.explanation.trim()
       };
     }
 
     if (format === "cloze") {
       if (
-        !item.text ||
+        typeof item.text !== "string" ||
+        !item.text.includes("{{LUECKE}}") ||
         !Array.isArray(item.answers) ||
-        !item.answers.length
+        !item.answers.length ||
+        !item.answers.every(
+          answer => typeof answer === "string" && answer.trim()
+        ) ||
+        typeof item.explanation !== "string" ||
+        !item.explanation.trim()
       ) {
-        throw new Error(`Lückentext ${index + 1} ist unvollständig.`);
+        throw new Error(
+          `Lückentext ${index + 1} ist unvollständig.`
+        );
       }
 
       return {
-        text: String(item.text),
-        answers: item.answers.map(String),
-        explanation: String(item.explanation || "")
+        text: item.text.trim(),
+        answers: item.answers.map(answer => answer.trim()),
+        explanation: item.explanation.trim()
       };
     }
 
@@ -140,14 +160,122 @@ function validateItems(format, items) {
   });
 }
 
+/**
+ * Erstellt eine einzelne Übung.
+ * Bei einem Fehler wird die Anfrage einmal wiederholt.
+ */
+async function generateOne({
+  format,
+  subject,
+  topic,
+  level,
+  materialContext,
+  index,
+  total
+}) {
+  const formatConfig = FORMATS[format];
+
+  const prompt = `
+Du bist ATELIER AI, ein präziser Lernassistent
+für die gymnasiale Oberstufe in Bayern.
+
+Fach: ${subject}
+Thema: ${topic}
+Niveau: ${level}
+
+AUFGABE:
+${formatConfig.instruction}
+
+AUSGABEFORMAT:
+${formatConfig.schema}
+
+VERBINDLICHE REGELN:
+- Erstelle genau eine Übung.
+- Halte dich exakt an das Ausgabeformat.
+- Gib ausschließlich gültiges JSON zurück.
+- Verwende doppelte Anführungszeichen.
+- Keine Kommentare.
+- Keine Markdown-Codeblöcke.
+- Keine Einleitung.
+- Kein Text außerhalb des JSON.
+- Keine zusätzlichen JSON-Schlüssel.
+- Erfinde keine Quellen oder Fakten.
+
+Gib ausschließlich das JSON-Objekt zurück.
+`;
+
+  let lastError;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const request = atelierAI.createRequest({
+        subject,
+        mode: "quiz",
+        question: prompt,
+        materials: materialContext,
+        grade: 12,
+        level
+      });
+
+      const response = await atelierAI.ask(request);
+
+      if (!response || response.status === "offline") {
+        throw new Error(
+          response?.message || "Das KI-Modell ist nicht verfügbar."
+        );
+      }
+
+      if (
+        typeof response.answer !== "string" ||
+        !response.answer.trim()
+      ) {
+        throw new Error("Die KI hat keine Antwort geliefert.");
+      }
+
+      const data = extractJSON(response.answer);
+
+      const items = validateItems(
+        format,
+        data.items
+      );
+
+      if (items.length !== 1) {
+        throw new Error(
+          "Die KI hat nicht genau eine Übung erstellt."
+        );
+      }
+
+      return items[0];
+
+    } catch (error) {
+      lastError = error;
+
+      console.warn(
+        `ATELIER AI: Übung ${index + 1}/${total}, Versuch ${attempt} fehlgeschlagen:`,
+        error
+      );
+    }
+  }
+
+  throw new Error(
+    `Übung ${index + 1} konnte auch nach einem Wiederholungsversuch nicht erstellt werden. ` +
+    (lastError?.message || "")
+  );
+}
+
+/**
+ * Learning Studio
+ */
 export class LearningStudio {
+
   async generate({
     format,
     subject,
     topic,
     count = 8,
     level = "grundlegend",
-    useMaterials = true
+    useMaterials = true,
+    onProgress = null
   }) {
     if (!FORMATS[format]) {
       throw new Error("Unbekanntes Lernformat.");
@@ -161,7 +289,10 @@ export class LearningStudio {
       throw new Error("Bitte zuerst ein KI-Modell laden.");
     }
 
-    const amount = Math.max(3, Math.min(12, Number(count) || 8));
+    const amount = Math.max(
+      3,
+      Math.min(12, Number(count) || 8)
+    );
 
     let materials = [];
 
@@ -174,70 +305,41 @@ export class LearningStudio {
       content: item.content
     }));
 
-    const formatInstruction = FORMATS[format].instruction
-      .replace("{count}", String(amount));
-    const schemaInstruction = {
-  flashcards: `
-Gib dieses JSON-Format zurück:
-{"items":[{"question":"Frage","answer":"Antwort"}]}
-`,
+    const items = [];
 
-  multipleChoice: `
-Gib dieses JSON-Format zurück:
-{"items":[{"question":"Frage","options":["A","B","C","D"],"correctIndex":0,"explanation":"Erklärung"}]}
-`,
+    /**
+     * STANDARDMODUS:
+     * Jede Übung wird einzeln generiert und validiert.
+     *
+     * SPÄTERER HYBRIDMODUS:
+     * Hier kann eine optionale Bündelgenerierung
+     * mit Einzelgenerierung als Fehler-Fallback ergänzt werden.
+     */
 
-  cloze: `
-Gib dieses JSON-Format zurück:
-{"items":[{"text":"Satz mit {{LUECKE}}","answers":["Lösung"],"explanation":"Erklärung"}]}
-`
-}[format];
+    for (let index = 0; index < amount; index++) {
 
-    const prompt = `
-Du bist ATELIER AI, ein Lernassistent für das Gymnasium Bayern.
+      const item = await generateOne({
+        format,
+        subject,
+        topic,
+        level,
+        materialContext,
+        index,
+        total: amount
+      });
 
-Fach: ${subject}
-Thema: ${topic}
-Niveau: ${level}
+      items.push(item);
 
-AUFGABE:
-${formatInstruction}
-
-${schemaInstruction}
-
-REGELN:
-- Erstelle genau ${amount} Aufgaben.
-- Verwende ausschließlich das angegebene Aufgabenformat.
-- Erstelle keine anderen Aufgabenformate.
-- Verwende ausschließlich gültige JSON-Syntax.
-- Verwende doppelte Anführungszeichen.
-- Keine Kommentare.
-- Keine Markdown-Codeblöcke.
-- Keine Einleitung.
-- Keine Erklärungen außerhalb des JSON.
-- Erfinde keine zusätzlichen JSON-Schlüssel.
-
-Gib ausschließlich das JSON-Objekt zurück.
-`;
-    const request = atelierAI.createRequest({
-      subject,
-      mode: "quiz",
-      question: prompt,
-      materials: materialContext,
-      grade: 12,
-      level
-    });
-
-    const response = await atelierAI.ask(request);
-
-    if (!response || response.status === "offline") {
-      throw new Error(
-        response?.message || "Das KI-Modell ist nicht verfügbar."
-      );
+      if (typeof onProgress === "function") {
+        onProgress({
+          completed: items.length,
+          total: amount,
+          percentage: Math.round(
+            (items.length / amount) * 100
+          )
+        });
+      }
     }
-
-    const data = extractJSON(response.answer);
-    const items = validateItems(format, data.items);
 
     return {
       format,
