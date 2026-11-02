@@ -178,6 +178,16 @@ export class LocalModel {
           vram: model.vram_required_MB
         }))
     );
+       return models
+      .filter(model =>
+        /(0\.5B|0\.6B|1B|3B|7B)(?=[-_])/i.test(model.model_id)
+      )
+      .map(model => ({
+        id: model.model_id,
+        name: model.model_id,
+        vram: model.vram_required_MB
+      }));
+  } 
 
   /**
    * Laden läuft jetzt ebenfalls innerhalb der Warteschlange.
