@@ -5,52 +5,172 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101827">
+
   <title>ATELIER AI</title>
+
   <style>
+    :root {
+      color-scheme: dark;
+      --background: #101827;
+      --surface: #1b293c;
+      --border: #33445c;
+      --accent: #477fb8;
+      --text: #edf3fb;
+      --muted: #aabbd0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      padding: 24px;
-      background: #101827;
-      color: #edf3fb;
+      padding: 24px 16px;
+      background: var(--background);
+      color: var(--text);
       font-family: system-ui, sans-serif;
     }
-    main { max-width: 760px; margin: auto; }
+
+    main {
+      max-width: 760px;
+      margin: auto;
+    }
+
+    header {
+      padding: 20px 0;
+    }
+
+    header p {
+      color: var(--muted);
+    }
+
     section {
-      background: #1b293c;
-      border: 1px solid #33445c;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 16px;
       padding: 20px;
       margin: 18px 0;
     }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 600;
+    }
+
     textarea, select, button {
-      box-sizing: border-box;
       width: 100%;
-      padding: 12px;
-      margin: 8px 0;
+      padding: 13px;
+      margin-top: 8px;
       border-radius: 9px;
       font: inherit;
     }
+
     textarea, select {
-      background: #101827;
+      background: var(--background);
       color: white;
       border: 1px solid #40536c;
     }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
     button {
-      background: #315f91;
+      background: var(--accent);
       color: white;
       border: 0;
       font-weight: bold;
+      cursor: pointer;
     }
-    #answer { white-space: pre-wrap; line-height: 1.6; }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #34465e;
+    }
+
+    #answer {
+      white-space: pre-wrap;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+    }
+
+    #progress {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 9px;
+      background: var(--background);
+      overflow-wrap: anywhere;
+    }
+
+    .source {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    a {
+      color: #91c8ff;
+    }
   </style>
 </head>
+
 <body>
 <main>
-  <h1>ATELIER AI</h1>
-  <p>Dein persönlicher Lernkern</p>
+
+  <header>
+    <h1>ATELIER AI</h1>
+    <p>Dein unabhängiges Lernsystem für die Oberstufe.</p>
+  </header>
+
+  <section>
+    <h2>Lokales KI-Modell</h2>
+
+    <p id="gpuStatus" class="status">
+      WebGPU wird noch nicht geprüft.
+    </p>
+
+    <label for="model">KI-Modell auswählen</label>
+    <select id="model" disabled>
+      <option value="">Modellliste noch nicht geladen</option>
+    </select>
+
+    <button id="loadModels" class="secondary">
+      Verfügbare Modelle suchen
+    </button>
+
+    <button id="loadModel" disabled>
+      Ausgewähltes Modell laden
+    </button>
+
+    <button id="unloadModel" class="secondary" disabled>
+      Modell entladen
+    </button>
+
+    <progress id="progress" value="0" max="100"></progress>
+
+    <p id="modelStatus" class="muted">
+      Noch kein Modell geladen.
+    </p>
+  </section>
 
   <section>
     <h2>Lernassistent</h2>
+
+    <label for="subject">Schulfach</label>
     <select id="subject">
       <option>Mathematik</option>
       <option>Deutsch</option>
@@ -60,45 +180,262 @@
       <option>Sport</option>
       <option>Spanisch</option>
       <option>Englisch</option>
-      <option>Biologie</option>
-      <option>Geschichte</option>
-      <option>Politik und Gesellschaft</option>
       <option>Evangelische Religion</option>
+      <option>Biologie</option>
+      <option>Politik und Gesellschaft</option>
+      <option>Geschichte</option>
     </select>
 
+    <label for="mode">Lernmodus</label>
     <select id="mode">
       <option value="explain">Erklären</option>
       <option value="quiz">Abfragen</option>
-      <option value="steps">Schrittweise lernen</option>
+      <option value="solve">Schrittweise lernen</option>
+      <option value="review">Antwort überprüfen</option>
     </select>
 
-    <textarea id="question"
-      placeholder="Was möchtest du lernen?"></textarea>
+    <label for="question">Deine Frage</label>
+    <textarea
+      id="question"
+      placeholder="Was möchtest du lernen?"
+    ></textarea>
 
-    <button id="ask">Lernanfrage vorbereiten</button>
-    <p id="answer">ATELIER AI ist bereit.</p>
+    <button id="ask">
+      Lernanfrage starten
+    </button>
+
+    <h3>Antwort</h3>
+
+    <div id="answer" class="status" aria-live="polite">
+      ATELIER AI ist bereit.
+    </div>
   </section>
+
+  <section>
+    <h2>Externe Recherche</h2>
+
+    <p id="researchStatus" class="muted">
+      Noch keine Recherche durchgeführt.
+    </p>
+
+    <div id="sources"></div>
+  </section>
+
+  <footer class="muted">
+    <p>ATELIER AI · Version 0.3</p>
+    <p>Lokale KI und persönliche Wissensbasis.</p>
+  </footer>
+
 </main>
 
-<script>
-document.getElementById("ask").onclick = () => {
-  const subject = document.getElementById("subject").value;
-  const mode = document.getElementById("mode").value;
-  const question = document.getElementById("question").value.trim();
+<script type="module">
+  import { atelierEngine } from "./src/core/engine.js";
+  import { atelierAI } from "./src/core/ai.js";
 
-  if (!question) {
-    document.getElementById("answer").textContent =
-      "Bitte gib zuerst eine Frage ein.";
-    return;
+  const $ = id => document.getElementById(id);
+
+  const modelSelect = $("model");
+  const loadModelsButton = $("loadModels");
+  const loadButton = $("loadModel");
+  const unloadButton = $("unloadModel");
+  const askButton = $("ask");
+
+  function showStatus(message) {
+    $("modelStatus").textContent = message;
   }
 
-  document.getElementById("answer").textContent =
-    "Deine Lernanfrage wurde vorbereitet.\n\n" +
-    "Fach: " + subject + "\n" +
-    "Lernmodus: " + mode + "\n" +
-    "Frage: " + question +
-    "\n\nDer KI-Kern wird im nächsten Entwicklungsschritt verbunden.";
-};
+  function updateModelButtons() {
+    const status = atelierAI.getStatus().localModel;
+
+    loadButton.disabled =
+      status.ready || status.loading || !modelSelect.value;
+
+    unloadButton.disabled = !status.ready;
+    modelSelect.disabled = status.ready || status.loading;
+    loadModelsButton.disabled = status.loading;
+
+    if (status.ready) {
+      showStatus("Modell geladen: " + status.model);
+    }
+  }
+
+  async function checkGPU() {
+    try {
+      const result = await atelierAI.checkSupport();
+
+      $("gpuStatus").textContent = result.reason;
+
+      if (!result.supported) {
+        showStatus("Lokale KI derzeit nicht verfügbar.");
+      }
+    } catch (error) {
+      $("gpuStatus").textContent = error.message;
+    }
+  }
+
+  loadModelsButton.addEventListener("click", async () => {
+    loadModelsButton.disabled = true;
+    showStatus("Modellliste wird geladen ...");
+
+    try {
+      const models = await atelierAI.getAvailableModels();
+
+      modelSelect.innerHTML = "";
+
+      if (!models.length) {
+        throw new Error("Keine passenden kleinen Modelle gefunden.");
+      }
+
+      for (const model of models) {
+        const option = document.createElement("option");
+        option.value = model.id;
+        option.textContent = model.name;
+        modelSelect.appendChild(option);
+      }
+
+      modelSelect.disabled = false;
+      showStatus(models.length + " passende Modelle gefunden.");
+
+    } catch (error) {
+      showStatus("Fehler: " + error.message);
+
+    } finally {
+      loadModelsButton.disabled = false;
+      updateModelButtons();
+    }
+  });
+
+  loadButton.addEventListener("click", async () => {
+    const modelId = modelSelect.value;
+
+    if (!modelId) {
+      showStatus("Bitte zuerst ein Modell auswählen.");
+      return;
+    }
+
+    loadButton.disabled = true;
+    modelSelect.disabled = true;
+
+    $("progress").value = 0;
+    showStatus("Modell wird geladen. Bitte warten ...");
+
+    try {
+      await atelierAI.loadModel(modelId, report => {
+        $("progress").value = report.progress;
+        showStatus(
+          report.text + " (" + report.progress + "%)"
+        );
+      });
+
+      showStatus("Lokales KI-Modell erfolgreich geladen.");
+
+    } catch (error) {
+      showStatus("Laden fehlgeschlagen: " + error.message);
+
+    } finally {
+      updateModelButtons();
+    }
+  });
+
+  unloadButton.addEventListener("click", async () => {
+    unloadButton.disabled = true;
+
+    try {
+      await atelierAI.unloadModel();
+      $("progress").value = 0;
+      showStatus("Modell wurde entladen.");
+
+    } catch (error) {
+      showStatus("Fehler: " + error.message);
+
+    } finally {
+      updateModelButtons();
+    }
+  });
+
+  askButton.addEventListener("click", async () => {
+    const question = $("question").value.trim();
+    const subject = $("subject").value;
+    const mode = $("mode").value;
+
+    if (!question) {
+      $("answer").textContent =
+        "Bitte gib zuerst eine Frage ein.";
+      return;
+    }
+
+    if (!atelierAI.getStatus().localModel.ready) {
+      $("answer").textContent =
+        "Bitte lade zuerst ein lokales KI-Modell.";
+      return;
+    }
+
+    askButton.disabled = true;
+    $("answer").textContent =
+      "ATELIER AI bearbeitet deine Anfrage ...";
+
+    $("sources").replaceChildren();
+    $("researchStatus").textContent =
+      "Recherche wird geprüft ...";
+
+    try {
+      const result = await atelierEngine.learn({
+        moduleId: "tutor",
+        subject,
+        task: mode,
+        question
+      });
+
+      const aiResult = result.result;
+
+      $("answer").textContent =
+        aiResult.answer ||
+        aiResult.message ||
+        "Keine Antwort erhalten.";
+
+      $("researchStatus").textContent =
+        "Recherche: " + result.research.status;
+
+      for (const source of result.externalSources) {
+        const item = document.createElement("div");
+        item.className = "source";
+
+        const title = document.createElement("strong");
+        title.textContent = source.title;
+
+        item.appendChild(title);
+        item.appendChild(document.createElement("br"));
+
+        const link = document.createElement("a");
+        link.href = source.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Quelle öffnen";
+
+        item.appendChild(link);
+        $("sources").appendChild(item);
+      }
+
+      if (result.research.error) {
+        $("researchStatus").textContent +=
+          " – " + result.research.error;
+      }
+
+    } catch (error) {
+      $("answer").textContent =
+        "Fehler: " + error.message;
+
+      $("researchStatus").textContent =
+        "Die Anfrage konnte nicht abgeschlossen werden.";
+
+    } finally {
+      askButton.disabled = false;
+    }
+  });
+
+  checkGPU();
+  updateModelButtons();
 </script>
+
 </body>
 </html>
