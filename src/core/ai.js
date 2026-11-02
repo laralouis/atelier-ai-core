@@ -169,7 +169,7 @@ keine andere Sprache verlangt.
         "Erkläre das Thema Schritt für Schritt mit Beispielen.",
 
       quiz:
-        "Stelle zunächst nur eine Frage. Verrate die Lösung nicht.",
+        "Erstelle die angeforderten Lernübungen im exakt vorgegebenen Ausgabeformat. Halte dich an die Aufgabenstellung der jeweiligen Funktion.",
 
       solve:
         "Begleite den Lernenden schrittweise. Gib nicht sofort die Gesamtlösung.",
