@@ -15,7 +15,7 @@ const MODEL_PATTERN = /(0\.5B|0\.6B|1B)(?=[-_])/i;
 const MAX_CONTEXT_CHARS = 4500;
 const MAX_LOCAL_CHARS = 3600;
 const MAX_EXTERNAL_CHARS = 900;
-const MAX_OUTPUT_TOKENS = 400;
+const MAX_OUTPUT_TOKENS = 1200;
 
 function safeText(value) {
   return String(value || "").trim();
