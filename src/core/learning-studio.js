@@ -194,36 +194,30 @@ Gib dieses JSON-Format zurück:
 }[format];
 
     const prompt = `
-Du bist ein Lernassistent für das Gymnasium Bayern (Jahrgangsstufe 12/13).
-
-Erstelle genau ${amount} Lernaufgaben.
+Du bist ATELIER AI, ein Lernassistent für das Gymnasium Bayern.
 
 Fach: ${subject}
 Thema: ${topic}
 Niveau: ${level}
-Aufgabenformat: ${format}
 
-WICHTIG:
-- Erstelle ausschließlich Aufgaben des angegebenen Formats.
-- Verwende die bereitgestellten Materialien als Grundlage.
-- Erfinde keine zusätzlichen Aufgabenformate.
-- Gib ausschließlich ein gültiges JSON-Objekt zurück.
+AUFGABE:
+${formatInstruction}
+
+${schemaInstruction}
+
+REGELN:
+- Erstelle genau ${amount} Aufgaben.
+- Verwende ausschließlich das angegebene Aufgabenformat.
+- Erstelle keine anderen Aufgabenformate.
+- Verwende ausschließlich gültige JSON-Syntax.
+- Verwende doppelte Anführungszeichen.
+- Keine Kommentare.
+- Keine Markdown-Codeblöcke.
+- Keine Einleitung.
 - Keine Erklärungen außerhalb des JSON.
-- Verwende doppelte Anführungszeichen für alle JSON-Schlüssel und Textwerte.
-- Keine Kommentare, keine Markdown-Codeblöcke.
+- Erfinde keine zusätzlichen JSON-Schlüssel.
 
-JSON-STRUKTUR:
-
-Für flashcards:
-{"items":[{"question":"Frage","answer":"Antwort"}]}
-
-Für multipleChoice:
-{"items":[{"question":"Frage","options":["A","B","C","D"],"correctIndex":0,"explanation":"Erklärung"}]}
-
-Für cloze:
-{"items":[{"text":"Satz mit {{LUECKE}}","answers":["Lösung"],"explanation":"Erklärung"}]}
-
-Erstelle genau ${amount} Aufgaben im Format ${format}.
+Gib ausschließlich das JSON-Objekt zurück.
 `;
     const request = atelierAI.createRequest({
       subject,
