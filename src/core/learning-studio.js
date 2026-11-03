@@ -9,8 +9,8 @@
  * - Mehrsprachige Erzeugung je nach Fach (DE/EN/ES)
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zf";
-import { knowledgeBase } from "./knowledge.js?v=20261103zf";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zg";
+import { knowledgeBase } from "./knowledge.js?v=20261103zg";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -78,25 +78,28 @@ Answer: <concise academic answer, at most 1-2 sentences>`,
 Respuesta: <respuesta académica breve, máximo 1-2 oraciones>`
     },
     parse(text) {
+      // Separator-Klasse inkl. Unicode-Bindestriche (– —) und →.
+      const SEP = "[:\\-\\u2013\\u2014\\u2192]";
+
       let clean = stripMarkdown(text);
 
       // Übung-/Karte-Header am Anfang entfernen, damit nur noch das
       // reine Frage/Antwort-Paar übrig bleibt.
       clean = clean.replace(
-        /^\s*(?:Übung|Ubung|Uebung|Exercise|Ejercicio|Flashcard|Karteikarte|Karte|Tarjeta|Card|Aufgabe)\s*\d*\s*[:\-).]?\s*/i,
+        /^\s*(?:Übung|Ubung|Uebung|Exercise|Ejercicio|Flashcard|Karteikarte|Karte|Tarjeta|Card|Aufgabe)\s*\d*\s*[:\-).\u2013\u2014]?\s*/i,
         ""
       ).trim();
 
       // Reine Nummerierung am Zeilenanfang wegwerfen: „1.", „1)", „(1)".
-      clean = clean.replace(/^\s*\(?\d+\)?\s*[:.)\-]\s*/, "").trim();
+      clean = clean.replace(/^\s*\(?\d+\)?\s*[:.)\-\u2013\u2014]\s*/, "").trim();
 
       // 1. Standardformat: „Frage: … Antwort: …"
       const qPattern = new RegExp(
-        `${KEYS.question}\\s*\\d*\\s*[:\\-]\\s*([\\s\\S]+?)(?=\\n\\s*(?:${KEYS.answer}|${KEYS.question})|$)`,
+        `${KEYS.question}\\s*\\d*\\s*${SEP}\\s*([\\s\\S]+?)(?=\\n\\s*(?:${KEYS.answer}|${KEYS.question})|$)`,
         "i"
       );
       const aPattern = new RegExp(
-        `${KEYS.answer}\\s*\\d*\\s*[:\\-]\\s*([\\s\\S]+?)(?=\\n\\s*(?:${KEYS.question}|${KEYS.answer})|$)`,
+        `${KEYS.answer}\\s*\\d*\\s*${SEP}\\s*([\\s\\S]+?)(?=\\n\\s*(?:${KEYS.question}|${KEYS.answer})|$)`,
         "i"
       );
 
@@ -106,7 +109,7 @@ Respuesta: <respuesta académica breve, máximo 1-2 oraciones>`
       // 2. Nur „Antwort:" vorhanden, Frage steht unmarkiert davor.
       if (!question && answer) {
         const answerStart = clean.search(
-          new RegExp(`${KEYS.answer}\\s*\\d*\\s*[:\\-]`, "i")
+          new RegExp(`${KEYS.answer}\\s*\\d*\\s*${SEP}`, "i")
         );
         if (answerStart > 0) {
           question = clean.slice(0, answerStart).trim();
@@ -115,28 +118,44 @@ Respuesta: <respuesta académica breve, máximo 1-2 oraciones>`
 
       // 3. Kurzform „Q: … A: …" oder „F: … A: …".
       if (!question) {
-        question = clean.match(/(?:^|\n)\s*(?:Q|F|P)\s*\d*\s*[:\-]\s*([^\n]+)/i)?.[1]?.trim() || null;
+        question = clean.match(new RegExp(
+          `(?:^|\\n)\\s*(?:Q|F|P)\\s*\\d*\\s*${SEP}\\s*([^\\n]+)`,
+          "i"
+        ))?.[1]?.trim() || null;
       }
       if (!answer) {
-        answer = clean.match(/(?:^|\n)\s*(?:A|R)\s*\d*\s*[:\-]\s*([\s\S]+?)(?=\n\s*(?:Q|F|P|A|R)\s*\d*\s*[:\-]|$)/i)?.[1]?.trim() || null;
+        answer = clean.match(new RegExp(
+          `(?:^|\\n)\\s*(?:A|R)\\s*\\d*\\s*${SEP}\\s*([\\s\\S]+?)(?=\\n\\s*(?:Q|F|P|A|R)\\s*\\d*\\s*${SEP}|$)`,
+          "i"
+        ))?.[1]?.trim() || null;
       }
 
-      // 4. Letzter Ausweg: erste nichtleere Zeile = Frage, Rest = Antwort.
+      // 4. Zeilenbasiert: erste nichtleere Zeile = Frage, Rest = Antwort.
       if (!question || !answer) {
         const lines = clean.split(/\n+/).map(l => l.trim()).filter(Boolean);
         if (lines.length >= 2) {
           if (!question) {
             question = lines[0].replace(
-              /^(?:Frage|Question|Pregunta|Q|F|P)\s*\d*\s*[:\-]\s*/i,
+              /^(?:Frage|Question|Pregunta|Q|F|P)\s*\d*\s*[:\-\u2013\u2014]\s*/i,
               ""
             ).trim();
           }
           if (!answer) {
             answer = lines.slice(1).join(" ").replace(
-              /^(?:Antwort|Answer|Respuesta|A|R)\s*\d*\s*[:\-]\s*/i,
+              /^(?:Antwort|Answer|Respuesta|A|R)\s*\d*\s*[:\-\u2013\u2014]\s*/i,
               ""
             ).trim();
           }
+        }
+      }
+
+      // 5. Einzeiliger Fall: alles auf einer Zeile mit „?" in der Mitte.
+      //    Vor dem Fragezeichen = Frage, danach = Antwort.
+      if ((!question || !answer) && clean && !clean.includes("\n")) {
+        const qMarkMatch = clean.match(/^(.*?[?¿])\s+(.+)$/);
+        if (qMarkMatch) {
+          if (!question) question = qMarkMatch[1].trim();
+          if (!answer) answer = qMarkMatch[2].trim();
         }
       }
 
@@ -144,7 +163,7 @@ Respuesta: <respuesta académica breve, máximo 1-2 oraciones>`
       // („Frage: X? Antwort: Y."), die Antwort aus der Frage schneiden.
       if (question) {
         question = question.replace(
-          new RegExp(`\\s*${KEYS.answer}\\s*\\d*\\s*[:\\-][\\s\\S]*$`, "i"),
+          new RegExp(`\\s*${KEYS.answer}\\s*\\d*\\s*${SEP}[\\s\\S]*$`, "i"),
           ""
         ).trim();
       }
@@ -896,8 +915,12 @@ async function generateBatch({
       "ATELIER AI: Parse-Fehler je Block:",
       parseErrors
     );
+    // Rohantwort in die Fehlermeldung einbetten, damit das Problem
+    // auch auf dem iPad (ohne Konsolenzugriff) sichtbar bleibt.
+    const snippet = raw.replace(/\s+/g, " ").trim().slice(0, 220);
     throw new Error(
-      "Die KI-Antwort konnte nicht in Übungen zerlegt werden."
+      "Die KI-Antwort konnte nicht in Übungen zerlegt werden. " +
+      "Modell antwortete so: „" + snippet + (raw.length > 220 ? "…" : "") + "\""
     );
   }
 
