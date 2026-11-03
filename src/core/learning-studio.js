@@ -9,8 +9,8 @@
  * - Mehrsprachige Erzeugung je nach Fach (DE/EN/ES)
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zd";
-import { knowledgeBase } from "./knowledge.js?v=20261103zd";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103ze";
+import { knowledgeBase } from "./knowledge.js?v=20261103ze";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -281,8 +281,113 @@ function looksLikePlaceholder(value) {
 }
 
 /**
- * Holt eine kurze Einleitung aus der zum Fach passenden Wikipedia.
- * DE: de.wikipedia.org, EN: en.wikipedia.org, ES: es.wikipedia.org.
+ * Holt wissenschaftliche Abstracts aus OpenAlex – einer freien
+ * Datenbank mit über 250 Mio. begutachteten Fachartikeln (Nature,
+ * Science, Springer, Wiley, universitäre Zeitschriften …).
+ *
+ * Keine API-Keys, CORS-freundlich, von Universitäten gepflegt.
+ * https://docs.openalex.org/
+ */
+async function fetchOpenAlexContext(topic, language = "de") {
+  const query = String(topic || "").trim();
+  if (!query) return null;
+
+  const lang = pickLang(language);
+
+  // Nach Relevanz sortiert, nur die 3 wichtigsten Werke.
+  const url =
+    "https://api.openalex.org/works" +
+    "?search=" + encodeURIComponent(query) +
+    "&per-page=3" +
+    "&sort=relevance_score:desc" +
+    "&select=title,abstract_inverted_index,authorships,publication_year,doi,primary_location,open_access";
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const works = Array.isArray(data?.results) ? data.results : [];
+    if (!works.length) return null;
+
+    const label = {
+      de: "[Fachliteratur] OpenAlex",
+      en: "[Academic source] OpenAlex",
+      es: "[Literatura académica] OpenAlex"
+    }[lang];
+
+    const summaries = [];
+
+    for (const work of works) {
+      const title = String(work?.title || "").trim();
+      if (!title) continue;
+
+      const year = work?.publication_year || "";
+      const firstAuthor = work?.authorships?.[0]?.author?.display_name || "";
+      const journal =
+        work?.primary_location?.source?.display_name || "";
+      const doi = work?.doi ? String(work.doi).replace(/^https?:\/\/doi\.org\//, "") : "";
+
+      // OpenAlex liefert Abstracts als „inverted index" (Wort → Positionen).
+      // Wir rekonstruieren den Fließtext daraus.
+      const abstract = reconstructAbstract(work?.abstract_inverted_index);
+      if (!abstract || abstract.length < 60) continue;
+
+      const header =
+        [firstAuthor, year ? `(${year})` : "", journal]
+          .filter(Boolean)
+          .join(" ");
+
+      const entry =
+        (header ? header + ":\n" : "") +
+        title +
+        "\n" +
+        abstract.slice(0, 320) +
+        (doi ? `\n[DOI: ${doi}]` : "");
+
+      summaries.push(entry);
+      if (summaries.join("\n\n").length > 650) break;
+    }
+
+    if (!summaries.length) return null;
+
+    return {
+      title: `${label}: ${query}`,
+      content: summaries.join("\n\n").slice(0, 800),
+      sourceType: "academic"
+    };
+  } catch (error) {
+    console.warn("ATELIER AI: OpenAlex-Abruf fehlgeschlagen:", error);
+    return null;
+  }
+}
+
+/**
+ * OpenAlex liefert Abstracts als „inverted index":
+ * { "wort": [position, position, ...], ... }
+ * Wir setzen daraus den originalen Fließtext zusammen.
+ */
+function reconstructAbstract(invertedIndex) {
+  if (!invertedIndex || typeof invertedIndex !== "object") return "";
+
+  const positions = [];
+  for (const [word, posList] of Object.entries(invertedIndex)) {
+    if (!Array.isArray(posList)) continue;
+    for (const pos of posList) {
+      positions.push({ pos, word });
+    }
+  }
+
+  return positions
+    .sort((a, b) => a.pos - b.pos)
+    .map(entry => entry.word)
+    .join(" ");
+}
+
+/**
+ * Rückfall-Quelle: Wikipedia liefert eine Zusammenfassung, falls
+ * OpenAlex für das Schulthema nichts Passendes findet (häufig bei
+ * sehr allgemeinen oder sehr schulspezifischen Themen).
  */
 async function fetchWikipediaContext(topic, language = "de") {
   const query = encodeURIComponent(String(topic || "").trim());
@@ -329,7 +434,8 @@ async function fetchWikipediaContext(topic, language = "de") {
 
     return {
       title: `${label}: ${title}`,
-      content: extract.slice(0, 250)
+      content: extract.slice(0, 350),
+      sourceType: "encyclopedia"
     };
   } catch (error) {
     console.warn(
@@ -338,6 +444,21 @@ async function fetchWikipediaContext(topic, language = "de") {
     );
     return null;
   }
+}
+
+/**
+ * Holt die beste verfügbare externe Quelle:
+ * 1. OpenAlex (begutachtete Fachliteratur) – Primär
+ * 2. Wikipedia – Rückfall, falls OpenAlex nichts liefert
+ *
+ * Dadurch bekommen Übungen echte wissenschaftliche Belege.
+ */
+async function fetchExternalContext(topic, language = "de") {
+  const openAlex = await fetchOpenAlexContext(topic, language);
+  if (openAlex) return openAlex;
+
+  const wiki = await fetchWikipediaContext(topic, language);
+  return wiki;
 }
 
 /**
@@ -449,15 +570,15 @@ const MC_RULES = {
 
 const KNOWLEDGE_RULES = {
   de: {
-    withMaterials: "- Nutze die bereitgestellten Materialien vorrangig und ergänze mit deinem Fachwissen, wo nötig.",
+    withMaterials: "- Baue jede Übung auf einem konkreten Fakt aus den bereitgestellten Materialien (eigene Unterrichtsmaterialien UND die Fachliteratur-Quelle) auf. Verknüpfe beide Quellen, wo es sinnvoll ist.",
     withoutMaterials: "- Nutze dein gesichertes Oberstufen-Fachwissen zum Thema."
   },
   en: {
-    withMaterials: "- Prefer the provided materials and complement them with your own expertise where needed.",
+    withMaterials: "- Base every exercise on a concrete fact from the provided materials (both class materials AND the academic source). Combine both sources where meaningful.",
     withoutMaterials: "- Draw on your reliable upper-school knowledge of the topic."
   },
   es: {
-    withMaterials: "- Da prioridad a los materiales proporcionados y complétalos con tus conocimientos cuando sea necesario.",
+    withMaterials: "- Fundamenta cada ejercicio en un hecho concreto de los materiales proporcionados (tanto materiales de clase COMO la fuente académica). Combina ambas fuentes cuando tenga sentido.",
     withoutMaterials: "- Basa la respuesta en tus conocimientos sólidos de bachillerato sobre el tema."
   }
 };
@@ -748,21 +869,29 @@ export class LearningStudio {
       Math.min(5, Number(count) || 5)
     );
 
-    let materials = [];
+    let localMaterials = [];
+    let externalSource = null;
 
     if (useMaterials) {
-      materials = await knowledgeBase.search(topic, subject);
+      // Lokale Materialien aus der Wissensbasis
+      localMaterials = await knowledgeBase.search(topic, subject);
+
+      // Externe seriöse Quelle (OpenAlex-Fachliteratur, Wikipedia als
+      // Rückfall). Wird IMMER zusätzlich geholt, nicht nur wenn lokale
+      // Materialien fehlen – so bekommt der Nutzer belegte Übungen.
+      externalSource = await fetchExternalContext(topic, language);
     }
 
-    if (useMaterials && materials.length === 0) {
-      const external = await fetchWikipediaContext(topic, language);
-      if (external) materials = [external];
-    }
-
-    const materialContext = materials.map(item => ({
-      title: item.title,
-      content: item.content
-    }));
+    const materialContext = [
+      ...localMaterials.map(item => ({
+        title: item.title,
+        content: item.content
+      })),
+      ...(externalSource ? [{
+        title: externalSource.title,
+        content: externalSource.content
+      }] : [])
+    ];
 
     let items = [];
     const failures = [];
@@ -962,12 +1091,8 @@ export class LearningStudio {
       items = items.slice(0, amount);
     }
 
-    const usedExternalSource = materials.some(item => {
-      const t = String(item.title || "").toLowerCase();
-      return t.includes("[externe quelle]")
-        || t.includes("[external source]")
-        || t.includes("[fuente externa]");
-    });
+    const usedExternalSource = Boolean(externalSource);
+    const externalSourceType = externalSource?.sourceType || null;
 
     return {
       format,
@@ -977,8 +1102,10 @@ export class LearningStudio {
       level,
       language,
       items,
-      materialCount: materials.length,
+      materialCount: localMaterials.length,
       usedExternalSource,
+      externalSourceType,
+      externalSourceTitle: externalSource?.title || null,
       requested: amount,
       failures,
       createdAt: new Date().toISOString()

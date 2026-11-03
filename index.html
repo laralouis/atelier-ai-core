@@ -602,7 +602,7 @@ async function safeImport(name,path){
   }
 }
 
-const ATELIER_VERSION = "20261103zd";
+const ATELIER_VERSION = "20261103ze";
 
 (() => {
   const tag = document.getElementById("versionTag");
@@ -902,11 +902,19 @@ $("generate").addEventListener("click",async()=>{
     selectedAnswers={};
     completed={};
 
-    const sourceNote=currentSet.usedExternalSource
-      ?" Externe Quelle (Wikipedia) genutzt."
-      :(currentSet.materialCount
-        ?` ${currentSet.materialCount} eigene Materialien berücksichtigt.`
-        :" Ohne Materialien (eigenes Fachwissen des Modells).");
+    const externalName=currentSet.externalSourceType==="academic"
+      ?"OpenAlex-Fachliteratur"
+      :(currentSet.externalSourceType==="encyclopedia"?"Wikipedia":"externe Quelle");
+    const parts=[];
+    if(currentSet.materialCount>0){
+      parts.push(`${currentSet.materialCount} eigene Materialien`);
+    }
+    if(currentSet.usedExternalSource){
+      parts.push(externalName);
+    }
+    const sourceNote=parts.length
+      ?" Grundlage: "+parts.join(" + ")+"."
+      :" Ohne Materialien (eigenes Fachwissen des Modells).";
     const failureNote=currentSet.failures&&currentSet.failures.length
       ?` ${currentSet.failures.length} von ${currentSet.requested||currentSet.items.length} Versuchen übersprungen.`
       :"";
@@ -1524,6 +1532,8 @@ $("importMaterial").addEventListener("click",async()=>{
       subject:$("materialSubject").value,
       title:material.title,
       content:material.content,
+      concepts:material.concepts||[],
+      summary:material.summary||"",
       source:"Lokaler Dateiimport"
     });
 

@@ -1,23 +1,25 @@
 
 /**
  * ATELIER AI – Gemeinsame Wissensbasis
- * Version 0.3
+ * Version 0.4
  *
  * Speicherung lokal über IndexedDB.
- * Strukturierte Suche mit relevanten Textabschnitten.
+ * Feinkörnige, konzept-sensitive Suche.
  *
  * Bestehende Datenbank und gespeicherte Materialien
- * bleiben erhalten.
+ * bleiben erhalten (DB_VERSION bleibt 1).
  */
 
 const DB_NAME = "atelier-ai-knowledge";
 const DB_VERSION = 1;
 const STORE_NAME = "materials";
 
-// Begrenzung für die lokale KI
-const MAX_CHUNK_LENGTH = 1100;
-const MAX_CHUNKS_PER_MATERIAL = 3;
-const MAX_TOTAL_CONTEXT = 5000;
+// Begrenzung für die lokale KI – kleinere, fokussiertere Chunks
+// erlauben präzisere Treffer und sparen Kontext-Budget.
+const MAX_CHUNK_LENGTH = 420;
+const MIN_CHUNK_LENGTH = 120;
+const MAX_CHUNKS_PER_MATERIAL = 5;
+const MAX_TOTAL_CONTEXT = 1200;
 
 // Häufige Wörter ohne großen Suchwert
 const STOP_WORDS = new Set([
@@ -123,82 +125,89 @@ function openDatabase() {
 }
 
 /**
- * Zerlegt den Text in Abschnitte.
+ * Zerlegt den Text in kleine, inhaltlich fokussierte Abschnitte.
  *
- * Zusammengehörige Stichpunkte bleiben möglichst
- * im selben Abschnitt.
+ * Strategie:
+ * 1. An Absatzgrenzen trennen
+ * 2. Zu lange Absätze an Satzgrenzen weiter zerlegen
+ * 3. Zu kurze Nachbar-Chunks zusammenführen
+ *
+ * Ergebnis: ~200-420 Zeichen pro Chunk, Satzgrenzen bleiben erhalten.
  */
 function splitIntoChunks(content) {
   const text = String(content || "")
     .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n");
+    .replace(/\r/g, "\n")
+    .replace(/^---\s*Seite\s*\d+\s*---/gm, "");
 
   const paragraphs = text
     .split(/\n\s*\n/)
     .map(part => part.trim())
     .filter(Boolean);
 
-  const chunks = [];
-  let current = "";
+  const rawChunks = [];
 
   for (const paragraph of paragraphs) {
-    if (paragraph.length > MAX_CHUNK_LENGTH) {
-      if (current) {
-        chunks.push(current);
-        current = "";
-      }
-
-      const lines = paragraph
-        .split("\n")
-        .map(line => line.trim())
-        .filter(Boolean);
-
-      let lineGroup = "";
-
-      for (const line of lines) {
-        if (
-          lineGroup &&
-          lineGroup.length + line.length + 1 >
-          MAX_CHUNK_LENGTH
-        ) {
-          chunks.push(lineGroup);
-          lineGroup = "";
-        }
-
-        lineGroup +=
-          (lineGroup ? "\n" : "") + line;
-      }
-
-      if (lineGroup) chunks.push(lineGroup);
+    if (paragraph.length <= MAX_CHUNK_LENGTH) {
+      rawChunks.push(paragraph);
       continue;
     }
 
-    if (
-      current &&
-      current.length + paragraph.length + 2 >
-      MAX_CHUNK_LENGTH
-    ) {
-      chunks.push(current);
-      current = "";
+    // Lange Absätze an Satzgrenzen aufteilen
+    const sentences = paragraph.match(/[^.!?\n]+[.!?]+|\s*[-*•]\s+[^\n]+|[^\n]{10,}/g)
+      || [paragraph];
+
+    let group = "";
+    for (const sentence of sentences) {
+      const piece = sentence.trim();
+      if (!piece) continue;
+
+      if (
+        group &&
+        group.length + piece.length + 1 > MAX_CHUNK_LENGTH
+      ) {
+        rawChunks.push(group);
+        group = "";
+      }
+
+      group += (group ? " " : "") + piece;
     }
 
-    current +=
-      (current ? "\n\n" : "") + paragraph;
+    if (group) rawChunks.push(group);
   }
 
-  if (current) chunks.push(current);
+  // Zu kurze Chunks mit dem nächsten zusammenlegen
+  const chunks = [];
+  for (const chunk of rawChunks) {
+    const last = chunks[chunks.length - 1];
+    if (
+      last &&
+      last.length < MIN_CHUNK_LENGTH &&
+      last.length + chunk.length + 2 <= MAX_CHUNK_LENGTH
+    ) {
+      chunks[chunks.length - 1] = last + "\n\n" + chunk;
+    } else {
+      chunks.push(chunk);
+    }
+  }
 
-  return chunks;
+  return chunks.filter(chunk => chunk.length >= 40);
 }
 
 /**
- * Bewertet die inhaltliche Übereinstimmung.
+ * Bewertet die inhaltliche Übereinstimmung eines Textabschnitts
+ * mit der Anfrage. Berücksichtigt:
+ * - exakte Treffer der Anfragewörter (hohes Gewicht)
+ * - Teilstring-Treffer (mittleres Gewicht)
+ * - Phrasentreffer (Bonus)
+ * - Dichte: viele Treffer in kurzem Chunk ist wertvoller
  */
 function scoreChunk(chunk, queryWords) {
   const normalized = normalizeText(chunk);
   const chunkWords = tokenize(chunk);
 
   let score = 0;
+  let hitCount = 0;
 
   for (const word of queryWords) {
     const exactMatches = chunkWords.filter(
@@ -207,26 +216,73 @@ function scoreChunk(chunk, queryWords) {
 
     const relatedMatches = chunkWords.filter(
       item =>
-        item.length >= 6 &&
-        word.length >= 6 &&
+        item.length >= 5 &&
+        word.length >= 5 &&
         (
           item.startsWith(word) ||
-          word.startsWith(item)
+          word.startsWith(item) ||
+          item.includes(word) ||
+          word.includes(item)
         )
     ).length;
 
     if (exactMatches > 0) {
       score += Math.min(exactMatches, 3) * 3;
+      hitCount += exactMatches;
     } else if (relatedMatches > 0) {
-      score += 1;
+      score += Math.min(relatedMatches, 2);
+      hitCount += 1;
     }
   }
 
+  // Phrasen-Bonus
   if (
     queryWords.length > 1 &&
     normalized.includes(queryWords.join(" "))
   ) {
-    score += 5;
+    score += 6;
+  }
+
+  // Dichte-Bonus: viele Treffer in einem kurzen Chunk sind wertvoller
+  if (hitCount > 0 && chunkWords.length > 0) {
+    const density = hitCount / Math.max(10, chunkWords.length);
+    score += Math.round(density * 10);
+  }
+
+  return score;
+}
+
+/**
+ * Bewertet, wie gut die gespeicherten Schlüsselbegriffe eines Materials
+ * zur Anfrage passen. Konzept-Treffer sind stärker gewichtet als
+ * zufällige Wort-Treffer im Text, weil sie strukturierte Information
+ * aus dem Material repräsentieren.
+ */
+function scoreConcepts(concepts, queryWords) {
+  if (!Array.isArray(concepts) || !concepts.length) return 0;
+
+  let score = 0;
+
+  for (const concept of concepts) {
+    const conceptWords = tokenize(String(concept || ""));
+    if (!conceptWords.length) continue;
+
+    for (const query of queryWords) {
+      if (conceptWords.includes(query)) {
+        score += 4;
+      } else if (
+        query.length >= 5 &&
+        conceptWords.some(
+          cw =>
+            cw.length >= 5 &&
+            (cw.startsWith(query) ||
+             query.startsWith(cw) ||
+             cw.includes(query))
+        )
+      ) {
+        score += 2;
+      }
+    }
   }
 
   return score;
@@ -236,11 +292,15 @@ export class KnowledgeBase {
 
   /**
    * Speichert ein neues Lernmaterial.
+   * concepts[] und summary werden optional mitgespeichert und
+   * verbessern später die Suchpräzision deutlich.
    */
   async add({
     subject,
     title,
     content,
+    concepts = [],
+    summary = "",
     source = "manual"
   }) {
     if (
@@ -269,6 +329,10 @@ export class KnowledgeBase {
           subject,
           title: title.trim(),
           content: content.trim(),
+          concepts: Array.isArray(concepts)
+            ? concepts.filter(c => typeof c === "string").slice(0, 50)
+            : [],
+          summary: typeof summary === "string" ? summary.slice(0, 600) : "",
           source,
           createdAt: new Date().toISOString()
         });
@@ -376,35 +440,46 @@ export class KnowledgeBase {
 
     for (const material of materials) {
       const title = String(material.title || "");
-      const titleWords = tokenize(title);
+      const concepts = material.concepts || [];
+      const summary = String(material.summary || "");
       const chunks = splitIntoChunks(material.content);
+
+      const titleScore = scoreChunk(title, queryWords);
+      const conceptScore = scoreConcepts(concepts, queryWords);
+      const summaryScore = summary
+        ? Math.round(scoreChunk(summary, queryWords) * 1.5)
+        : 0;
 
       const scoredChunks = chunks
         .map((content, index) => {
-          let score = scoreChunk(
-            content,
-            queryWords
-          );
-
-          const titleScore = scoreChunk(
-            title,
-            queryWords
-          );
-
-          score += titleScore * 2;
+          const base = scoreChunk(content, queryWords);
+          const score = base
+            + titleScore * 2
+            + Math.round(conceptScore * 0.5)
+            + Math.round(summaryScore * 0.3);
 
           return {
             content,
             index,
-            score
+            score,
+            baseScore: base
           };
         })
-        .filter(chunk => chunk.score > 0)
+        .filter(chunk => chunk.baseScore > 0 || chunk.score > 3)
         .sort((a, b) => b.score - a.score);
 
-      if (!scoredChunks.length) continue;
+      if (!scoredChunks.length && conceptScore === 0 && titleScore === 0) {
+        continue;
+      }
 
-      const selected = scoredChunks
+      // Falls Material relevant ist, aber kein einzelner Chunk Treffer
+      // hat (nur über Titel/Konzept-Match), geben wir die aussagekräftigste
+      // Zusammenfassung mit – Anfang des Materials oder summary-Feld.
+      const effectiveChunks = scoredChunks.length
+        ? scoredChunks
+        : [{ content: summary || chunks[0] || "", index: 0, score: titleScore + conceptScore }];
+
+      const selected = effectiveChunks
         .slice(0, MAX_CHUNKS_PER_MATERIAL)
         .sort((a, b) => a.index - b.index);
 
@@ -438,14 +513,21 @@ export class KnowledgeBase {
 
       if (!selectedContent) continue;
 
+      const totalScore = effectiveChunks.reduce(
+        (total, chunk) => total + chunk.score,
+        0
+      ) + conceptScore + summaryScore;
+
       matches.push({
         ...material,
         content: selectedContent,
-        score:
-          scoredChunks.reduce(
-            (total, chunk) => total + chunk.score,
-            0
-          )
+        matchedConcepts: concepts
+          .filter(c => {
+            const cw = tokenize(String(c));
+            return cw.some(w => queryWords.includes(w));
+          })
+          .slice(0, 5),
+        score: totalScore
       });
     }
 

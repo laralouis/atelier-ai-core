@@ -1,16 +1,19 @@
 
 /**
  * ATELIER AI – Material Import
- * Version 0.2
+ * Version 0.3
  *
- * Strukturierter Import von PDF und TXT.
- * Erhält möglichst:
+ * Strukturierter Import von PDF und TXT mit automatischer Extraktion
+ * von Schlüsselbegriffen. Erhält möglichst:
  * - Überschriften
  * - Absätze
  * - Stichpunkte
  * - Nummerierungen
  * - Seitenumbrüche
  * - Zeilenreihenfolge
+ *
+ * Zusätzlich: concepts[]-Liste mit Schlüsselbegriffen, die die
+ * Wissensbasis bei der Suche bevorzugt bewertet.
  */
 
 export class MaterialImporter {
@@ -48,14 +51,109 @@ export class MaterialImporter {
       );
     }
 
+    const concepts = this.extractConcepts(content);
+    const summary = this.extractSummary(content);
+
     return {
       title: file.name,
       content,
+      concepts,
+      summary,
       fileType: extension,
       size: file.size,
       pageCount,
       importedAt: new Date().toISOString()
     };
+  }
+
+  /**
+   * Zieht Schlüsselbegriffe aus dem Material.
+   * Heuristiken:
+   * - Fettgedruckte Markdown-Begriffe (**Begriff**, __Begriff__)
+   * - Überschriften (Zeilen in Großbuchstaben oder mit # )
+   * - Begriffe vor einem Doppelpunkt (Definitionen)
+   * - Großgeschriebene Mehrwortgruppen (z. B. "Natürliche Selektion")
+   */
+  extractConcepts(content) {
+    const text = String(content || "");
+    const found = new Map();
+
+    const addConcept = (raw, weight = 1) => {
+      const term = raw
+        .trim()
+        .replace(/[*_`"'()\[\]{}]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (term.length < 3 || term.length > 60) return;
+      if (/^\d+$/.test(term)) return;
+
+      const key = term.toLowerCase();
+      found.set(key, (found.get(key) || 0) + weight);
+    };
+
+    // 1. Fettgedruckt
+    for (const match of text.matchAll(/\*\*([^*\n]{3,60})\*\*/g)) {
+      addConcept(match[1], 3);
+    }
+    for (const match of text.matchAll(/__([^_\n]{3,60})__/g)) {
+      addConcept(match[1], 3);
+    }
+
+    // 2. Überschriften (Markdown oder in Großbuchstaben)
+    for (const match of text.matchAll(/^#{1,6}\s+(.{3,80})$/gm)) {
+      addConcept(match[1], 4);
+    }
+    for (const match of text.matchAll(/^([A-ZÄÖÜ][A-ZÄÖÜ\s\-]{3,60})$/gm)) {
+      addConcept(match[1], 2);
+    }
+
+    // 3. Begriffe vor Doppelpunkt (Definitionen)
+    for (const match of text.matchAll(/^\s*([A-ZÄÖÜ][\wäöüßÄÖÜ\s\-]{2,40})\s*:/gm)) {
+      addConcept(match[1], 2);
+    }
+
+    // 4. Großgeschriebene Mehrwortgruppen im Fließtext
+    //    (z. B. "Natürliche Selektion", "Erster Weltkrieg")
+    const multiWordCapital = text.match(
+      /\b[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,3}\b/g
+    ) || [];
+    for (const phrase of multiWordCapital) {
+      addConcept(phrase, 1);
+    }
+
+    return Array.from(found.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 25)
+      .map(entry => entry[0]);
+  }
+
+  /**
+   * Erzeugt eine Kurzfassung: die ersten informativen Sätze.
+   * Dient als schneller Überblick für die KI, ohne das ganze
+   * Dokument zu laden.
+   */
+  extractSummary(content) {
+    const text = String(content || "")
+      .replace(/^---\s*Seite\s*\d+\s*---/gm, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+    const chosen = [];
+    let total = 0;
+
+    for (const sentence of sentences) {
+      const clean = sentence.trim();
+      if (clean.length < 25) continue;
+      if (/^(seite|page|kapitel|chapter)\b/i.test(clean)) continue;
+
+      chosen.push(clean);
+      total += clean.length;
+      if (total > 400 || chosen.length >= 4) break;
+    }
+
+    return chosen.join(" ").slice(0, 500);
   }
 
   /**
