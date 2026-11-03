@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zm";
-import { knowledgeBase } from "./knowledge.js?v=20261103zm";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zn";
+import { knowledgeBase } from "./knowledge.js?v=20261103zn";
 
-const BUILD = "20261103zm";
+const BUILD = "20261103zn";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -791,6 +791,283 @@ const FORMAT_EXTRA_RULES = {
   }
 };
 
+/**
+ * Fachspezifische Few-Shot-Beispiele.
+ *
+ * Hintergrund: kleine Modelle kopieren bei Few-Shot-Prompting gerne den
+ * konkreten Inhalt des Beispiels – ein Choral-Beispiel führte zu
+ * Choral-Antworten auch bei Mathematik-Fragen. Deshalb liefern wir für
+ * jedes Schulfach ein eigenes, authentisches Beispiel.
+ *
+ * Deutsch ist Standard; Englisch und Spanisch sind nur für die
+ * sprachlehrenden Fächer (die ihrerseits in der jeweiligen Sprache
+ * antworten) als separate Beispiele hinterlegt.
+ */
+const SUBJECT_EXAMPLES = {
+  Mathematik: {
+    flashcards: `Übung 1:
+Frage: Wie lautet die Ableitung von f(x) = x^n für n ∈ ℝ?
+Antwort: Nach der Potenzregel gilt f'(x) = n · x^(n-1).
+
+Übung 2:
+Frage: Was besagt der Mittelwertsatz der Differentialrechnung?
+Antwort: Für jede auf [a,b] stetige und auf (a,b) differenzierbare Funktion existiert ein c ∈ (a,b) mit f'(c) = (f(b)-f(a))/(b-a).`,
+    multipleChoice: `Übung 1:
+Frage: Welche Ableitung hat f(x) = sin(x)?
+A: -cos(x)
+B: cos(x)
+C: -sin(x)
+D: tan(x)
+Richtig: B
+Erklärung: Es gilt (sin x)' = cos(x). -cos(x) wäre die Ableitung von cos(x), nicht von sin(x); -sin(x) ist die Ableitung von cos(x).`,
+    cloze: `Übung 1:
+Satz: Eine Funktion f ist in x₀ differenzierbar, wenn der {{LUECKE}} existiert; die Ableitung gibt die {{LUECKE}} der Tangente an und ihr Vorzeichen bestimmt das {{LUECKE}} des Graphen.
+Lösungen: Grenzwert des Differenzenquotienten; Steigung; Monotonieverhalten
+Erklärung: Differenzierbarkeit bedeutet die Existenz des Grenzwerts des Differenzenquotienten; die Ableitung ist die Steigung der Tangente und beschreibt die Monotonie.`
+  },
+  Deutsch: {
+    flashcards: `Übung 1:
+Frage: Welche drei Merkmale kennzeichnen die literarische Moderne (ca. 1890-1920)?
+Antwort: Ich-Zerfall, Sprachskepsis und Pluralismus der Stile (u. a. Expressionismus, Symbolismus, Dadaismus).
+
+Übung 2:
+Frage: Was unterscheidet eine Metapher von einem Vergleich?
+Antwort: Die Metapher setzt zwei Bildbereiche ohne Vergleichspartikel gleich; der Vergleich verknüpft sie explizit mit 'wie' oder 'als'.`,
+    multipleChoice: `Übung 1:
+Frage: Welches Stilmittel liegt im Satz 'Die Flamme der Hoffnung erlosch' vor?
+A: Metonymie
+B: Metapher
+C: Hyperbel
+D: Anapher
+Richtig: B
+Erklärung: 'Flamme der Hoffnung' überträgt ein Bild (Feuer) auf einen abstrakten Begriff (Hoffnung) ohne 'wie' – das ist eine Metapher. Metonymie würde den Begriff durch einen eng verwandten ersetzen.`,
+    cloze: `Übung 1:
+Satz: Ein Drama nach Freytag gliedert sich in {{LUECKE}}, {{LUECKE}}, Höhepunkt, {{LUECKE}} und {{LUECKE}}.
+Lösungen: Exposition; steigende Handlung; retardierendes Moment; Katastrophe
+Erklärung: Freytags Pyramide beschreibt den klassischen Fünfakter: Exposition, steigende Handlung, Höhepunkt mit Peripetie, retardierendes Moment, Katastrophe.`
+  },
+  Geographie: {
+    flashcards: `Übung 1:
+Frage: Was bezeichnet man als Innertropische Konvergenzzone (ITC)?
+Antwort: Den Tiefdruckgürtel am thermischen Äquator, in dem Nordost- und Südostpassate zusammentreffen und Zenitalregen auslösen.
+
+Übung 2:
+Frage: Welche drei Prozesse treiben die Plattenbewegung an?
+Antwort: Konvektionsströme im Erdmantel, Ridge Push an mittelozeanischen Rücken und Slab Pull an Subduktionszonen.`,
+    multipleChoice: `Übung 1:
+Frage: Welcher Faktor erklärt die Entstehung von Monsunwinden am stärksten?
+A: Corioliskraft
+B: Druckunterschied zwischen erwärmtem Festland und kühlerem Ozean
+C: Golfstrom
+D: Jetstream
+Richtig: B
+Erklärung: Monsune entstehen durch jahreszeitlich wechselnde Druckgradienten zwischen Festland und Ozean. Die Corioliskraft lenkt die Winde nur ab, erzeugt sie aber nicht.`,
+    cloze: `Übung 1:
+Satz: In humiden Mittelbreiten entstehen Böden vom Typ {{LUECKE}}, in semiariden Steppen dominiert der {{LUECKE}}, und in den feuchten Tropen bildet sich der nährstoffarme {{LUECKE}}.
+Lösungen: Braunerde; Tschernosem; Latosol
+Erklärung: Braunerde ist typisch für humide Mittelbreiten, Tschernosem für Steppen, Latosol für feuchttropische Verwitterung.`
+  },
+  Chemie: {
+    flashcards: `Übung 1:
+Frage: Wie lautet die allgemeine Reaktionsgleichung einer Veresterung?
+Antwort: Carbonsäure + Alkohol ⇌ Ester + Wasser (säurekatalysiert, Gleichgewichtsreaktion).
+
+Übung 2:
+Frage: Was besagt das Prinzip von Le Chatelier?
+Antwort: Ein chemisches Gleichgewicht weicht einer äußeren Störung (Druck, Temperatur, Konzentration) so aus, dass die Störung minimiert wird.`,
+    multipleChoice: `Übung 1:
+Frage: Welche Hybridisierung liegt am Kohlenstoff in Ethen (C₂H₄) vor?
+A: sp
+B: sp²
+C: sp³
+D: sp³d
+Richtig: B
+Erklärung: Ethen hat eine C=C-Doppelbindung, also drei σ-Bindungen pro C-Atom – das entspricht sp²-Hybridisierung. sp³ läge bei vier Einfachbindungen vor.`,
+    cloze: `Übung 1:
+Satz: Eine Säure ist nach {{LUECKE}} ein {{LUECKE}}-Donator, der mit Wasser {{LUECKE}}-Ionen bildet; die Stärke wird mit dem {{LUECKE}}-Wert ausgedrückt.
+Lösungen: Brønsted; Protonen; Oxonium; pKs
+Erklärung: Nach Brønsted ist eine Säure ein Protonendonator; sie bildet mit Wasser H₃O⁺-Ionen, die Säurestärke wird durch den pKs-Wert quantifiziert.`
+  },
+  Musik: {
+    flashcards: `Übung 1:
+Frage: Welche Rolle spielt der Choral im Gregorianischen Repertoire?
+Antwort: Er bildet die liturgische Grundform – einstimmig, unbegleitet und in den acht Kirchentonarten notiert.
+
+Übung 2:
+Frage: Wodurch unterscheidet sich eine Fuge formal vom Kanon?
+Antwort: Die Fuge verarbeitet ein Thema in mehreren Stimmen mit Dux, Comes und Zwischenspielen; der Kanon wiederholt die Melodie identisch, nur zeitlich versetzt.`,
+    multipleChoice: `Übung 1:
+Frage: Welche Tonalität verwendet der Gregorianische Choral?
+A: Dur und Moll
+B: Die acht Kirchentonarten
+C: Pentatonik
+D: Zwölftontechnik
+Richtig: B
+Erklärung: Der Gregorianische Choral folgt den acht Kirchentonarten (Dorisch, Phrygisch, Lydisch, Mixolydisch jeweils authentisch und plagal). Dur/Moll setzt sich erst ab dem 17. Jahrhundert durch.`,
+    cloze: `Übung 1:
+Satz: Die Sonatenhauptsatzform gliedert sich in {{LUECKE}}, {{LUECKE}} und {{LUECKE}}; das Hauptthema erscheint in der Tonika, das Seitenthema zuerst in der {{LUECKE}}.
+Lösungen: Exposition; Durchführung; Reprise; Dominante
+Erklärung: Die klassische Sonatenhauptsatzform besteht aus Exposition, Durchführung und Reprise; das Seitenthema steht in der Dominanttonart (bei Durwerken) bzw. der parallelen Durtonart (bei Mollwerken).`
+  },
+  Sport: {
+    flashcards: `Übung 1:
+Frage: Welche drei Energiesysteme stehen dem Muskel bei Belastung zur Verfügung?
+Antwort: Das anaerob-alaktazide (ATP/Kreatinphosphat), das anaerob-laktazide (Glykolyse mit Laktat) und das aerobe System (oxidative Phosphorylierung).
+
+Übung 2:
+Frage: Was unterscheidet Maximalkraft von Schnellkraft?
+Antwort: Maximalkraft ist die höchste willkürlich erzeugbare Kraft; Schnellkraft ist die Fähigkeit, in kürzester Zeit einen hohen Kraftanstieg zu erreichen (Explosivkraft).`,
+    multipleChoice: `Übung 1:
+Frage: Welches Energiesystem dominiert bei einem 100-m-Sprint?
+A: Aerobe Phosphorylierung
+B: Anaerob-alaktazide ATP-Spaltung
+C: Fettsäureoxidation
+D: Krebs-Zyklus
+Richtig: B
+Erklärung: In den ersten 8-10 Sekunden maximaler Belastung liefert das anaerob-alaktazide System über die Spaltung von ATP und Kreatinphosphat die Energie. Aerobe Prozesse brauchen deutlich länger.`,
+    cloze: `Übung 1:
+Satz: Die aerobe Ausdauer wird durch die {{LUECKE}} begrenzt; Trainingsmethoden sind die {{LUECKE}}, die {{LUECKE}} und die {{LUECKE}}.
+Lösungen: maximale Sauerstoffaufnahme (VO₂max); Dauermethode; extensive Intervallmethode; Fahrtspiel
+Erklärung: Die VO₂max setzt die Obergrenze aerober Leistungsfähigkeit; Dauer-, Intervall- und Fahrtspielmethode sind etablierte Trainingsformen zur Verbesserung.`
+  },
+  "Evangelische Religion": {
+    flashcards: `Übung 1:
+Frage: Was besagt Luthers Rechtfertigungslehre?
+Antwort: Der Mensch wird 'sola gratia, sola fide' – allein aus Gnade und durch den Glauben – gerecht, nicht durch eigene Werke.
+
+Übung 2:
+Frage: Welche vier 'solae' prägen die reformatorische Theologie?
+Antwort: Sola scriptura (allein die Schrift), sola gratia (allein die Gnade), sola fide (allein der Glaube), solus Christus (allein Christus).`,
+    multipleChoice: `Übung 1:
+Frage: Welche theologische Grundidee markiert Luthers 95 Thesen von 1517?
+A: Ablehnung der Trinität
+B: Kritik am Ablasshandel und Betonung der Buße
+C: Einführung des Zölibats
+D: Trennung von Kirche und Staat
+Richtig: B
+Erklärung: Die 95 Thesen richten sich gegen den Ablasshandel und fordern innerliche Buße. Trennung von Kirche und Staat ist eine spätere säkulare Entwicklung.`,
+    cloze: `Übung 1:
+Satz: Nach Bonhoeffer ist 'billige Gnade' die {{LUECKE}} ohne {{LUECKE}}, während 'teure Gnade' Christus {{LUECKE}} und zur {{LUECKE}} ruft.
+Lösungen: Rechtfertigung; Nachfolge; nachfolgt; Jüngerschaft
+Erklärung: Bonhoeffer kontrastiert in 'Nachfolge' (1937) billige Gnade (Rechtfertigung ohne Nachfolge) mit teurer Gnade, die zur Jüngerschaft verpflichtet.`
+  },
+  Biologie: {
+    flashcards: `Übung 1:
+Frage: Welche beiden Phasen umfasst die Photosynthese?
+Antwort: Die Lichtreaktion (Thylakoide, ATP + NADPH + O₂) und die Dunkelreaktion / Calvin-Zyklus (Stroma, CO₂-Fixierung zu Glucose).
+
+Übung 2:
+Frage: Was unterscheidet die DNA-Replikation vom Transkriptionsprozess?
+Antwort: Replikation kopiert die gesamte DNA zu zwei identischen Tochtersträngen (DNA-Polymerase); Transkription überträgt einen DNA-Abschnitt in eine mRNA (RNA-Polymerase).`,
+    multipleChoice: `Übung 1:
+Frage: An welcher Zellstruktur findet die oxidative Phosphorylierung statt?
+A: Zellkern
+B: Raues ER
+C: Innere Mitochondrienmembran
+D: Golgi-Apparat
+Richtig: C
+Erklärung: Die ATP-Synthese über die Atmungskette läuft an der inneren Mitochondrienmembran ab. Der Zellkern beherbergt die DNA, am rauen ER erfolgt die Proteinsynthese.`,
+    cloze: `Übung 1:
+Satz: Die Enzymkinetik nach Michaelis-Menten beschreibt den {{LUECKE}} über die Konstante {{LUECKE}} und die maximale {{LUECKE}}; am {{LUECKE}} des Enzyms bindet das Substrat.
+Lösungen: Reaktionsverlauf; KM; Reaktionsgeschwindigkeit vmax; aktiven Zentrum
+Erklärung: Michaelis-Menten erklärt enzymatische Reaktionsgeschwindigkeiten durch KM (Substratkonzentration bei halbmaximaler Geschwindigkeit) und vmax; die Katalyse findet am aktiven Zentrum statt.`
+  },
+  "Politik und Gesellschaft": {
+    flashcards: `Übung 1:
+Frage: Welche fünf Verfassungsprinzipien nennt Art. 20 GG?
+Antwort: Demokratie, Rechtsstaat, Sozialstaat, Bundesstaat (Föderalismus) und Republik.
+
+Übung 2:
+Frage: Was bedeutet das Subsidiaritätsprinzip in der EU?
+Antwort: Die EU wird nur tätig, wenn ein Ziel auf nationaler, regionaler oder lokaler Ebene nicht ausreichend erreicht werden kann (Art. 5 EUV).`,
+    multipleChoice: `Übung 1:
+Frage: Welche Institution der Bundesrepublik hat das alleinige Recht, Gesetze verfassungsrechtlich zu überprüfen?
+A: Bundestag
+B: Bundesregierung
+C: Bundesverfassungsgericht
+D: Bundesrat
+Richtig: C
+Erklärung: Nach Art. 93 GG ist das Bundesverfassungsgericht für die Normenkontrolle zuständig. Der Bundestag erlässt Gesetze, überprüft sie aber nicht auf Verfassungsmäßigkeit.`,
+    cloze: `Übung 1:
+Satz: Das Grundgesetz schützt die {{LUECKE}} in Art. 1, bindet alle staatliche Gewalt an die {{LUECKE}} (Art. 20 III) und verlangt eine Rechtfertigung jedes Eingriffs über das {{LUECKE}}sprinzip.
+Lösungen: Menschenwürde; Verfassung und Gesetze; Verhältnismäßigkeit
+Erklärung: Art. 1 GG schützt die Menschenwürde unantastbar; Art. 20 III bindet staatliches Handeln an Verfassung und Gesetz; das Verhältnismäßigkeitsprinzip verlangt Eignung, Erforderlichkeit und Angemessenheit jeden Grundrechtseingriffs.`
+  },
+  Geschichte: {
+    flashcards: `Übung 1:
+Frage: Welche vier Ursachenkomplexe nennt die Forschung für den Ausbruch des Ersten Weltkriegs?
+Antwort: Imperialismus, Bündnissystem (Entente/Dreibund), Wettrüsten, Nationalismus mit Krisenherd Balkan (Juli-Krise 1914).
+
+Übung 2:
+Frage: Was besagt die Fischer-These zur Kriegsschuldfrage 1914?
+Antwort: Fritz Fischer (1961) sah im Deutschen Reich den Hauptverursacher: Weltmachtstreben und Kriegsabsichten als wesentliche Ursache des Ersten Weltkriegs.`,
+    multipleChoice: `Übung 1:
+Frage: Welches Ereignis gilt als Beginn der Französischen Revolution?
+A: Ermordung Marats 1793
+B: Sturm auf die Bastille am 14. Juli 1789
+C: Hinrichtung Ludwigs XVI. 1793
+D: Krönung Napoleons 1804
+Richtig: B
+Erklärung: Der Sturm auf die Bastille am 14. Juli 1789 markiert den symbolischen Beginn der Revolution. Hinrichtung und Marat-Ermordung sind spätere Ereignisse der Jakobinerherrschaft.`,
+    cloze: `Übung 1:
+Satz: Der Versailler Vertrag von {{LUECKE}} verpflichtete das Deutsche Reich zur {{LUECKE}}, zu Reparationen und zur Abtretung von {{LUECKE}}; der Artikel {{LUECKE}} legte die alleinige Kriegsschuld fest.
+Lösungen: 1919; Entmilitarisierung; Elsass-Lothringen; 231
+Erklärung: Der Vertrag wurde 1919 unterzeichnet, verpflichtete zur Entmilitarisierung, forderte u. a. die Rückgabe Elsass-Lothringens an Frankreich und schrieb mit Art. 231 die alleinige deutsche Kriegsschuld fest.`
+  }
+};
+
+// Fachspezifische Beispiele für fremdsprachliche Fächer (Antwortsprache
+// ist dann die Zielsprache). Englisch-Beispiele zu englischer Grammatik,
+// Spanisch zu spanischer Grammatik – damit das Beispiel inhaltlich zum
+// Sprachunterricht passt.
+const SUBJECT_EXAMPLES_EN = {
+  Englisch: {
+    flashcards: `Exercise 1:
+Question: What distinguishes the present perfect from the simple past in English?
+Answer: Present perfect links a past action to the present (unspecified time), while simple past describes a completed action at a specific past time.
+
+Exercise 2:
+Question: Which stylistic device dominates in Shakespeare's "Shall I compare thee to a summer's day"?
+Answer: The extended metaphor (conceit), comparing the beloved to summer across the entire sonnet.`,
+    multipleChoice: `Exercise 1:
+Question: Which tense is used in: "By 2030, scientists will have discovered a cure."?
+A: Simple future
+B: Future continuous
+C: Future perfect
+D: Present perfect
+Correct: C
+Explanation: "will have + past participle" is the future perfect, used for actions completed before a point in the future. Simple future would be "will discover".`,
+    cloze: `Exercise 1:
+Sentence: A sonnet by Shakespeare consists of {{LUECKE}} lines in {{LUECKE}} and follows the rhyme scheme {{LUECKE}}, ending with a {{LUECKE}}.
+Solutions: 14; iambic pentameter; ABAB CDCD EFEF GG; rhymed couplet
+Explanation: A Shakespearean sonnet has 14 lines in iambic pentameter, follows the ABAB CDCD EFEF GG rhyme scheme and closes with a rhymed couplet.`
+  }
+};
+
+const SUBJECT_EXAMPLES_ES = {
+  Spanisch: {
+    flashcards: `Ejercicio 1:
+Pregunta: ¿Qué diferencia hay entre el pretérito indefinido y el pretérito imperfecto en español?
+Respuesta: El indefinido describe acciones puntuales terminadas en el pasado; el imperfecto expresa acciones habituales o descripciones de fondo sin un final definido.
+
+Ejercicio 2:
+Pregunta: ¿Qué figura retórica predomina en el poema "Caminante, no hay camino" de Antonio Machado?
+Respuesta: La metáfora extendida: la vida como camino que se construye al andar, con uso de paralelismo y anáfora.`,
+    multipleChoice: `Ejercicio 1:
+Pregunta: ¿Qué modo verbal exige la expresión "No creo que ... la verdad"?
+A: Indicativo
+B: Subjuntivo
+C: Imperativo
+D: Condicional
+Correcta: B
+Explicación: Expresiones de duda o negación de una opinión ("no creo que") rigen subjuntivo. El indicativo aparecería tras "creo que ...".`,
+    cloze: `Ejercicio 1:
+Oración: El Siglo de Oro español abarca los siglos {{LUECKE}}, con autores como {{LUECKE}} (teatro), {{LUECKE}} (novela picaresca) y {{LUECKE}} (poesía mística).
+Soluciones: XVI y XVII; Lope de Vega; Francisco de Quevedo; San Juan de la Cruz
+Explicación: El Siglo de Oro cubre los siglos XVI y XVII; Lope de Vega renovó el teatro, Quevedo cultivó la picaresca y San Juan de la Cruz la poesía mística.`
+  }
+};
+
 const KNOWLEDGE_RULES = {
   de: {
     withMaterials:
@@ -841,7 +1118,22 @@ function buildBatchPrompt({
 
   const formatConfig = FORMATS[format];
   const singleTemplate = formatConfig.template[lang];
-  const example = formatConfig.example?.[lang] || "";
+
+  // Fachspezifisches Few-Shot-Beispiel wählen. Zwischenergebnis vorher:
+  // ein Choral-Beispiel führte zu Choral-Antworten in Mathematik.
+  // Deshalb jetzt pro Fach ein eigenes Beispiel; nur wenn ein Fach
+  // nicht erfasst ist, fällt die Logik auf das generische Beispiel in
+  // FORMATS[format].example zurück.
+  const subjectPool = lang === "en"
+    ? SUBJECT_EXAMPLES_EN
+    : lang === "es"
+      ? SUBJECT_EXAMPLES_ES
+      : SUBJECT_EXAMPLES;
+
+  const example =
+    subjectPool?.[subject]?.[format]
+    || formatConfig.example?.[lang]
+    || "";
 
   const mcLine = format === "multipleChoice"
     ? "\n" + MC_RULES[lang]
@@ -880,13 +1172,14 @@ function buildBatchPrompt({
       task: "Aufgabe",
       count: "Übungen",
       format: "VERWENDE EXAKT DIESES FORMAT:",
-      exampleLabel: "BEISPIEL (nur zur Formatveranschaulichung – erzeuge eigene Übungen zum angegebenen Thema):",
+      exampleLabel: `BEISPIEL – nur zur FORMATveranschaulichung. Der INHALT des Beispiels ist IRRELEVANT. Deine Übungen behandeln ausschließlich das Thema "${topic}" im Fach ${subject}:`,
+      exampleAfter: `ENDE DES BEISPIELS. Vergiss den Inhalt des Beispiels komplett. Dein Thema ist "${topic}" im Fach ${subject} – darüber (und NUR darüber) sollst du Übungen erstellen.`,
       rules: "Regeln",
       ruleLevel: `Oberstufen-Niveau (${level}), fachlich korrekt, auf Deutsch.`,
       ruleFormat: "Keine Einleitung, kein Markdown, keine Codeblöcke, kein Fließtext zwischen den Übungen. Antworte NUR mit den Übungen im Format.",
-      ruleTopic: `Jede Übung MUSS einen Begriff aus "${topic}" verwenden.`,
+      ruleTopic: `Jede Übung MUSS inhaltlich zum Thema "${topic}" (Fach: ${subject}) gehören. Keine Übung zu einem anderen Fach oder Thema.`,
       ruleUnique: "Jede Übung behandelt einen ANDEREN Aspekt – keine inhaltlichen Wiederholungen zwischen den Übungen.",
-      startCue: `Erzeuge jetzt ${count} verschiedene Übungen zum Thema "${topic}" (Fach: ${subject}). Beginne SOFORT mit "Übung 1:".`
+      startCue: `Erzeuge jetzt ${count} verschiedene Übungen zum Thema "${topic}" im Fach ${subject}. Beginne SOFORT mit "Übung 1:".`
     },
     en: {
       topic: "Topic",
@@ -894,13 +1187,14 @@ function buildBatchPrompt({
       task: "Task",
       count: "exercises",
       format: "USE EXACTLY THIS FORMAT:",
-      exampleLabel: "EXAMPLE (illustrates the format only – create your own exercises about the given topic):",
+      exampleLabel: `EXAMPLE – FORMAT illustration only. The CONTENT of the example is IRRELEVANT. Your exercises are strictly about the topic "${topic}" in ${subject}:`,
+      exampleAfter: `END OF EXAMPLE. Forget the example content entirely. Your topic is "${topic}" in ${subject} – create exercises about THIS and nothing else.`,
       rules: "Rules",
       ruleLevel: `Upper-school level (${level}), academically correct, in English.`,
       ruleFormat: "No preamble, no markdown, no code blocks, no running text between exercises. Reply ONLY with the exercises in the format.",
-      ruleTopic: `Every exercise MUST use a term from "${topic}".`,
+      ruleTopic: `Every exercise MUST address the topic "${topic}" (Subject: ${subject}). No exercise about a different subject or topic.`,
       ruleUnique: "Each exercise must cover a DIFFERENT aspect – no content repetitions between exercises.",
-      startCue: `Now generate ${count} distinct exercises about the topic "${topic}" (Subject: ${subject}). Start IMMEDIATELY with "Exercise 1:".`
+      startCue: `Now generate ${count} distinct exercises about "${topic}" in ${subject}. Start IMMEDIATELY with "Exercise 1:".`
     },
     es: {
       topic: "Tema",
@@ -908,13 +1202,14 @@ function buildBatchPrompt({
       task: "Tarea",
       count: "ejercicios",
       format: "UTILIZA EXACTAMENTE ESTE FORMATO:",
-      exampleLabel: "EJEMPLO (solo para ilustrar el formato – crea tus propios ejercicios sobre el tema indicado):",
+      exampleLabel: `EJEMPLO – solo para ilustrar el FORMATO. El CONTENIDO del ejemplo es IRRELEVANTE. Tus ejercicios tratan únicamente el tema "${topic}" en ${subject}:`,
+      exampleAfter: `FIN DEL EJEMPLO. Olvida por completo el contenido del ejemplo. Tu tema es "${topic}" en ${subject} – crea ejercicios SOLO sobre eso.`,
       rules: "Reglas",
       ruleLevel: `Nivel de bachillerato superior (${level}), académicamente correcto, en español.`,
       ruleFormat: "Sin introducción, sin markdown, sin bloques de código, sin texto corrido entre ejercicios. Responde SOLO con los ejercicios en el formato.",
-      ruleTopic: `Cada ejercicio DEBE usar un término de "${topic}".`,
+      ruleTopic: `Cada ejercicio DEBE tratar el tema "${topic}" (Asignatura: ${subject}). Ningún ejercicio sobre otra asignatura u otro tema.`,
       ruleUnique: "Cada ejercicio debe tratar un aspecto DIFERENTE – sin repeticiones de contenido entre ejercicios.",
-      startCue: `Genera ahora ${count} ejercicios distintos sobre el tema "${topic}" (Asignatura: ${subject}). Empieza INMEDIATAMENTE con "Ejercicio 1:".`
+      startCue: `Genera ahora ${count} ejercicios distintos sobre "${topic}" en ${subject}. Empieza INMEDIATAMENTE con "Ejercicio 1:".`
     }
   };
 
@@ -923,7 +1218,7 @@ function buildBatchPrompt({
   const instruction = formatConfig.instruction[lang];
 
   const exampleBlock = example
-    ? `\n${h.exampleLabel}\n${example}\n`
+    ? `\n${h.exampleLabel}\n${example}\n\n${h.exampleAfter}\n`
     : "";
 
   return `${h.topic}: "${topic}" (${h.subject}: ${subject})
