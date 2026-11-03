@@ -1,16 +1,20 @@
 
 /**
  * ATELIER AI – Learning Studio
- * Version 2.1
+ * Version 2.2
  *
  * Hybride Generierung:
  * - Standardmäßig Einzelgenerierung
  * - Validierung jeder einzelnen Übung
  * - Mehrsprachige Erzeugung je nach Fach (DE/EN/ES)
+ * - Letzter Rettungsanker, der aus beliebigem Rohtext mindestens eine
+ *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zg";
-import { knowledgeBase } from "./knowledge.js?v=20261103zg";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zh";
+import { knowledgeBase } from "./knowledge.js?v=20261103zh";
+
+const BUILD = "20261103zh";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -826,6 +830,56 @@ function splitIntoBlocks(text, primaryKey) {
   return clean.length > 10 ? [clean] : [];
 }
 
+/**
+ * Letzter Rettungsanker: Wenn Parse+Validate restlos scheitern,
+ * baue aus der Rohantwort trotzdem eine brauchbare Übung. Lieber eine
+ * imperfekte Karte als die Fehlermeldung „konnte nicht zerlegt werden".
+ *
+ * Nur für Flashcards sinnvoll – MC und Lückentexte brauchen Struktur,
+ * die nicht aus Rohtext rekonstruiert werden kann.
+ */
+function rescueFromRaw(format, raw, topic) {
+  if (format !== "flashcards") return null;
+
+  const text = stripMarkdown(String(raw || ""))
+    .replace(/^\s*(?:Hier|Here|Aquí|Aqui)[\s\S]*?[:\-\u2013\u2014]\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (text.length < 20) return null;
+
+  // Variante 1: Fragezeichen in der Mitte vorhanden.
+  const qMarkIdx = text.search(/[?¿]/);
+  if (qMarkIdx > 10 && qMarkIdx < text.length - 10) {
+    const q = text.slice(0, qMarkIdx + 1).trim();
+    const a = text.slice(qMarkIdx + 1).trim();
+    if (q.length >= 5 && a.length >= 5) {
+      return [{ question: q, answer: a }];
+    }
+  }
+
+  // Variante 2: mehrere Sätze – erster Satz als Frage, Rest als Antwort.
+  const sentences = text.match(/[^.!?]+[.!?]+/g);
+  if (sentences && sentences.length >= 2) {
+    const q = sentences[0].trim();
+    const a = sentences.slice(1).join(" ").trim();
+    if (q.length >= 5 && a.length >= 5) {
+      return [{ question: q, answer: a }];
+    }
+  }
+
+  // Variante 3: nur ein Textblock – als Antwort nutzen, Frage aus Thema.
+  const topicStr = String(topic || "").trim();
+  if (topicStr.length >= 3 && text.length >= 20) {
+    return [{
+      question: `Was ist zum Thema „${topicStr}" wichtig?`,
+      answer: text.slice(0, 400)
+    }];
+  }
+
+  return null;
+}
+
 async function generateBatch({
   format,
   subject,
@@ -915,13 +969,28 @@ async function generateBatch({
       "ATELIER AI: Parse-Fehler je Block:",
       parseErrors
     );
-    // Rohantwort in die Fehlermeldung einbetten, damit das Problem
-    // auch auf dem iPad (ohne Konsolenzugriff) sichtbar bleibt.
-    const snippet = raw.replace(/\s+/g, " ").trim().slice(0, 220);
-    throw new Error(
-      "Die KI-Antwort konnte nicht in Übungen zerlegt werden. " +
-      "Modell antwortete so: „" + snippet + (raw.length > 220 ? "…" : "") + "\""
-    );
+
+    // Rettungsanker: aus der Rohantwort selbst eine Karte bauen.
+    const rescued = rescueFromRaw(format, raw, topic);
+    if (rescued) {
+      try {
+        const validated = validateItems(format, rescued);
+        items.push(...validated);
+        console.warn("ATELIER AI: Rohtext-Rettung erfolgreich – 1 Karte.");
+      } catch (rescueError) {
+        console.warn("ATELIER AI: Rettung konnte nicht validiert werden:", rescueError);
+      }
+    }
+
+    if (items.length === 0) {
+      // Rohantwort in die Fehlermeldung einbetten, damit das Problem
+      // auch auf dem iPad (ohne Konsolenzugriff) sichtbar bleibt.
+      const snippet = raw.replace(/\s+/g, " ").trim().slice(0, 220);
+      throw new Error(
+        `[Build ${BUILD}] Die KI-Antwort konnte nicht in Übungen zerlegt werden. ` +
+        "Modell antwortete so: „" + snippet + (raw.length > 220 ? "…" : "") + "\""
+      );
+    }
   }
 
   return { items, raw, parseErrors };
@@ -1188,7 +1257,7 @@ export class LearningStudio {
       }
 
       throw new Error(
-        "Es konnte keine einzige Übung erstellt werden. " +
+        `[Build ${BUILD}] Es konnte keine einzige Übung erstellt werden. ` +
         "Letzter Grund: " + lastMessage +
         " – Bitte ein kleineres Modell wählen oder nur 2–3 Übungen auf einmal anfordern."
       );
