@@ -479,7 +479,7 @@ h2{font-size:32px}
     <div class="field"><label for="materialSubject">Schulfach</label><select id="materialSubject">
       <option>Mathematik</option><option>Deutsch</option><option>Geographie</option><option>Chemie</option><option>Musik</option><option>Sport</option><option>Spanisch</option><option>Englisch</option><option>Evangelische Religion</option><option>Biologie</option><option>Politik und Gesellschaft</option><option>Geschichte</option>
     </select></div>
-    <div class="field"><label for="materialFile">Datei auswählen</label><input type="file" id="materialFile" accept=".pdf,.txt,application/pdf,text/plain"></div>
+    <div class="field"><label for="materialFile">Datei auswählen (PDF, TXT, Foto/Bild)</label><input type="file" id="materialFile" accept=".pdf,.txt,.jpg,.jpeg,.png,.webp,.bmp,.gif,.heic,application/pdf,text/plain,image/*"></div>
     <button class="button" id="importMaterial">Material importieren</button>
     <div id="materialStatus" class="status">Noch keine Datei importiert.</div>
   </div>
@@ -602,7 +602,7 @@ async function safeImport(name,path){
   }
 }
 
-const ATELIER_VERSION = "20261103zh";
+const ATELIER_VERSION = "20261103zi";
 
 (() => {
   const tag = document.getElementById("versionTag");
@@ -1526,7 +1526,25 @@ $("importMaterial").addEventListener("click",async()=>{
   setStatus("materialStatus","Datei wird verarbeitet ...");
 
   try{
-    const material=await materialImporter.importFile(file);
+    const material=await materialImporter.importFile(file,report=>{
+      if(!report)return;
+      if(report.phase==="pdf-text-progress"){
+        setStatus("materialStatus",
+          `Lese PDF-Text (Seite ${report.current}/${report.total}) ...`);
+      }else if(report.phase==="ocr-start"){
+        setStatus("materialStatus",
+          `Text wurde nicht direkt gefunden – starte Zeichenerkennung (OCR) für ${report.pages} Seite${report.pages===1?"":"n"} ...`);
+      }else if(report.phase==="ocr-page"){
+        setStatus("materialStatus",
+          `OCR Seite ${report.current}/${report.total} ...`);
+      }else if(report.phase==="ocr-progress"&&typeof report.percentage==="number"){
+        setStatus("materialStatus",
+          `OCR läuft (${report.percentage}%) ...`);
+      }else if(report.phase==="ocr-error"){
+        setStatus("materialStatus",
+          "OCR konnte nicht geladen werden – nur pdf.js-Text wird genutzt.","error");
+      }
+    });
 
     await knowledgeBase.add({
       subject:$("materialSubject").value,
@@ -1534,14 +1552,16 @@ $("importMaterial").addEventListener("click",async()=>{
       content:material.content,
       concepts:material.concepts||[],
       summary:material.summary||"",
-      source:"Lokaler Dateiimport"
+      source:material.usedOCR?"Lokaler Dateiimport (OCR)":"Lokaler Dateiimport"
     });
 
     $("materialFile").value="";
 
     setStatus(
       "materialStatus",
-      "Material erfolgreich gespeichert.",
+      material.usedOCR
+        ?"Material erfolgreich gespeichert (per OCR eingelesen). Bei handschriftlichem Text bitte Ergebnis stichprobenartig prüfen."
+        :"Material erfolgreich gespeichert.",
       "success"
     );
 

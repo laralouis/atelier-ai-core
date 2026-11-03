@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zh";
-import { knowledgeBase } from "./knowledge.js?v=20261103zh";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zi";
+import { knowledgeBase } from "./knowledge.js?v=20261103zi";
 
-const BUILD = "20261103zh";
+const BUILD = "20261103zi";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -657,16 +657,31 @@ const MC_RULES = {
 
 const KNOWLEDGE_RULES = {
   de: {
-    withMaterials: "- Baue jede Übung auf einem konkreten Fakt aus den bereitgestellten Materialien (eigene Unterrichtsmaterialien UND die Fachliteratur-Quelle) auf. Verknüpfe beide Quellen, wo es sinnvoll ist.",
-    withoutMaterials: "- Nutze dein gesichertes Oberstufen-Fachwissen zum Thema."
+    withMaterials:
+      "- Jede Übung MUSS auf einem KONKRETEN Begriff, Satz oder Fakt aus den ARBEITSMATERIALIEN basieren – also aus den Unterrichtsmaterialien der Schülerin. Erfinde KEINE neuen Fakten.\n" +
+      "- Streue die Übungen über das Material: wähle für jede Übung einen ANDEREN Abschnitt oder Begriff. Keine zwei Übungen zum selben Teilaspekt.\n" +
+      "- Nutze die externe Fachliteratur nur zur Vertiefung oder zur Formulierung, nicht als Hauptquelle.",
+    withoutMaterials:
+      "- Nutze dein gesichertes Oberstufen-Fachwissen zum Thema.\n" +
+      "- Jede Übung behandelt einen ANDEREN Teilaspekt – keine inhaltlichen Doppelungen."
   },
   en: {
-    withMaterials: "- Base every exercise on a concrete fact from the provided materials (both class materials AND the academic source). Combine both sources where meaningful.",
-    withoutMaterials: "- Draw on your reliable upper-school knowledge of the topic."
+    withMaterials:
+      "- Every exercise MUST be based on a CONCRETE term, sentence or fact from the WORKING MATERIAL – i.e. the student's class notes. Do NOT invent new facts.\n" +
+      "- Spread the exercises across the material: pick a DIFFERENT section or term for each exercise. No two exercises on the same sub-aspect.\n" +
+      "- Use the external academic source only for depth or wording, not as the main source.",
+    withoutMaterials:
+      "- Draw on your reliable upper-school knowledge of the topic.\n" +
+      "- Each exercise must cover a DIFFERENT sub-aspect – no content repetition."
   },
   es: {
-    withMaterials: "- Fundamenta cada ejercicio en un hecho concreto de los materiales proporcionados (tanto materiales de clase COMO la fuente académica). Combina ambas fuentes cuando tenga sentido.",
-    withoutMaterials: "- Basa la respuesta en tus conocimientos sólidos de bachillerato sobre el tema."
+    withMaterials:
+      "- Cada ejercicio DEBE basarse en un término, frase o hecho CONCRETO del MATERIAL DE TRABAJO – es decir, los apuntes de clase de la alumna. NO inventes hechos nuevos.\n" +
+      "- Reparte los ejercicios sobre el material: elige una sección o término DIFERENTE para cada ejercicio. Nunca dos ejercicios sobre el mismo subaspecto.\n" +
+      "- Usa la fuente académica externa solo para profundizar o para la redacción, no como fuente principal.",
+    withoutMaterials:
+      "- Basa la respuesta en tus conocimientos sólidos de bachillerato sobre el tema.\n" +
+      "- Cada ejercicio debe tratar un subaspecto DIFERENTE – sin repeticiones."
   }
 };
 

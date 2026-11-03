@@ -10,11 +10,14 @@ const WEBLLM_URL = "https://esm.run/@mlc-ai/web-llm@0.2.87";
 // Alle Zeichen-/Token-Limits bewusst klein gehalten: iPad-Metal OOM-t
 // schnell, wenn Prompt + KV-Cache + Output zusammen zu groß werden.
 // Kürzerer Kontext → kleinere KV-Cache → GPU überlebt zuverlässig.
-const MAX_CONTEXT_CHARS = 900;
-const MAX_LOCAL_CHARS = 600;
-const MAX_EXTERNAL_CHARS = 300;
+// Lokale Materialien bekommen deutlich mehr Platz als externe Quellen,
+// weil es die eigenen Unterrichts-/Hefteinträge der Schülerin sind –
+// die sollen das Herzstück der Übungen sein.
+const MAX_CONTEXT_CHARS = 2200;
+const MAX_LOCAL_CHARS = 1600;
+const MAX_EXTERNAL_CHARS = 400;
 const MAX_OUTPUT_TOKENS = 400;
-const MAX_OUTPUT_TOKENS_QUIZ = 300;
+const MAX_OUTPUT_TOKENS_QUIZ = 350;
 const MAX_HISTORY_MESSAGES = 2;
 const MAX_HISTORY_CHARS_PER_MESSAGE = 400;
 const MAX_HISTORY_CHARS_TOTAL = 800;
@@ -85,23 +88,23 @@ const QUIZ_LABELS = {
   de: {
     task: "AUFGABE",
     reference:
-      "REFERENZ-MATERIAL (nur zur Themen-Information, nicht übernehmen)",
+      "ARBEITSMATERIAL (eigene Unterrichtsmaterialien – jede Übung MUSS auf einem konkreten Fakt aus genau diesen Materialien basieren; keine erfundenen Inhalte)",
     outro:
-      "Antworte ausschließlich im vorgegebenen Textformat. Keine Einleitung, kein zusätzlicher Text."
+      "Nutze die ARBEITSMATERIALIEN als primäre Faktenquelle. Antworte ausschließlich im vorgegebenen Textformat. Keine Einleitung, kein zusätzlicher Text."
   },
   en: {
     task: "TASK",
     reference:
-      "REFERENCE MATERIAL (only for topic context, do not copy)",
+      "WORKING MATERIAL (the student's own class materials – every exercise MUST be based on a concrete fact from exactly these materials; no invented content)",
     outro:
-      "Reply strictly in the given text format. No preamble, no extra text."
+      "Use the WORKING MATERIAL as your primary source of facts. Reply strictly in the given text format. No preamble, no extra text."
   },
   es: {
     task: "TAREA",
     reference:
-      "MATERIAL DE REFERENCIA (solo como contexto, no copiar)",
+      "MATERIAL DE TRABAJO (materiales de clase propios de la alumna – cada ejercicio DEBE basarse en un hecho concreto de exactamente estos materiales; sin contenido inventado)",
     outro:
-      "Responde únicamente en el formato de texto indicado. Sin introducción ni texto adicional."
+      "Utiliza el MATERIAL DE TRABAJO como fuente principal de hechos. Responde únicamente en el formato de texto indicado. Sin introducción ni texto adicional."
   }
 };
 

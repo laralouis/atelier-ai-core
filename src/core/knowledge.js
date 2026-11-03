@@ -15,11 +15,13 @@ const DB_VERSION = 1;
 const STORE_NAME = "materials";
 
 // Begrenzung für die lokale KI – kleinere, fokussiertere Chunks
-// erlauben präzisere Treffer und sparen Kontext-Budget.
-const MAX_CHUNK_LENGTH = 420;
+// erlauben präzisere Treffer und sparen Kontext-Budget. Für die
+// Übungserzeugung wollen wir aber genügend Original-Material
+// mitgeben – deshalb jetzt deutlich großzügiger.
+const MAX_CHUNK_LENGTH = 500;
 const MIN_CHUNK_LENGTH = 120;
-const MAX_CHUNKS_PER_MATERIAL = 5;
-const MAX_TOTAL_CONTEXT = 1200;
+const MAX_CHUNKS_PER_MATERIAL = 6;
+const MAX_TOTAL_CONTEXT = 1800;
 
 // Häufige Wörter ohne großen Suchwert
 const STOP_WORDS = new Set([

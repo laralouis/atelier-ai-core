@@ -1,10 +1,15 @@
 
 /**
  * ATELIER AI – Material Import
- * Version 0.3
+ * Version 0.4
  *
- * Strukturierter Import von PDF und TXT mit automatischer Extraktion
- * von Schlüsselbegriffen. Erhält möglichst:
+ * Strukturierter Import von PDF, TXT und Bildern (JPG, PNG, HEIC).
+ * Enthält jetzt eine OCR-Stufe (Tesseract.js) für gescannte und
+ * handschriftliche Seiten – pdf.js liefert bei solchen Seiten keinen
+ * oder nur sehr spärlichen Text, dann rendern wir die Seite in ein
+ * Canvas und erkennen den Text per OCR.
+ *
+ * Erhält möglichst:
  * - Überschriften
  * - Absätze
  * - Stichpunkte
@@ -16,9 +21,55 @@
  * Wissensbasis bei der Suche bevorzugt bewertet.
  */
 
+const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+const PDFJS_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+// Unter dieser Zeichenzahl pro Seite nehmen wir an, dass die Seite
+// gescannt oder handschriftlich ist, und schalten OCR dazu.
+const OCR_PAGE_THRESHOLD = 60;
+
+let tesseractScriptPromise = null;
+
+/**
+ * Lädt Tesseract.js aus dem CDN (nur einmal pro Session) und
+ * gibt das globale `Tesseract`-Objekt zurück.
+ */
+function loadTesseract() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("OCR ist nur im Browser verfügbar."));
+  }
+
+  if (window.Tesseract) {
+    return Promise.resolve(window.Tesseract);
+  }
+
+  if (!tesseractScriptPromise) {
+    tesseractScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = TESSERACT_URL;
+      script.async = true;
+      script.onload = () => {
+        if (window.Tesseract) {
+          resolve(window.Tesseract);
+        } else {
+          reject(new Error("Tesseract.js wurde geladen, ist aber nicht verfügbar."));
+        }
+      };
+      script.onerror = () => {
+        tesseractScriptPromise = null;
+        reject(new Error("Tesseract.js konnte nicht geladen werden."));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  return tesseractScriptPromise;
+}
+
 export class MaterialImporter {
 
-  async importFile(file) {
+  async importFile(file, onProgress = null) {
     if (!file) {
       throw new Error("Keine Datei ausgewählt.");
     }
@@ -28,18 +79,30 @@ export class MaterialImporter {
       .pop()
       .toLowerCase();
 
+    const report = (phase, detail = {}) => {
+      if (typeof onProgress === "function") {
+        try { onProgress({ phase, ...detail }); } catch { /* ignore */ }
+      }
+    };
+
     let content = "";
     let pageCount = null;
+    let usedOCR = false;
 
     if (extension === "txt") {
       content = await this.extractTXT(file);
     } else if (extension === "pdf") {
-      const result = await this.extractPDF(file);
+      const result = await this.extractPDF(file, report);
       content = result.content;
       pageCount = result.pageCount;
+      usedOCR = result.usedOCR;
+    } else if (["jpg", "jpeg", "png", "webp", "bmp", "gif", "heic"].includes(extension)) {
+      report("ocr-start", { pages: 1 });
+      content = await this.extractImageOCR(file, report);
+      usedOCR = true;
     } else {
       throw new Error(
-        "Unterstützt werden zunächst PDF und TXT."
+        "Unterstützt werden PDF, TXT und Bilddateien (JPG, PNG, HEIC)."
       );
     }
 
@@ -47,12 +110,15 @@ export class MaterialImporter {
 
     if (!content.trim()) {
       throw new Error(
-        "Die Datei enthält keinen lesbaren Text."
+        "Die Datei enthält keinen lesbaren Text. " +
+        "Bei handschriftlichen Dokumenten: Bitte in gutem Licht fotografieren und die Schrift möglichst groß und klar halten."
       );
     }
 
     const concepts = this.extractConcepts(content);
     const summary = this.extractSummary(content);
+
+    report("done", { contentLength: content.length, usedOCR });
 
     return {
       title: file.name,
@@ -62,8 +128,41 @@ export class MaterialImporter {
       fileType: extension,
       size: file.size,
       pageCount,
+      usedOCR,
       importedAt: new Date().toISOString()
     };
+  }
+
+  /**
+   * OCR für ein einzelnes Bild (JPG, PNG, HEIC …).
+   * Nutzt Tesseract.js mit deutschem + englischem Modell.
+   */
+  async extractImageOCR(file, report) {
+    const Tesseract = await loadTesseract();
+
+    const worker = await Tesseract.createWorker(["deu", "eng"], 1, {
+      logger: m => {
+        if (m.status === "recognizing text") {
+          report("ocr-progress", {
+            current: 1,
+            total: 1,
+            percentage: Math.round((m.progress || 0) * 100)
+          });
+        }
+      }
+    });
+
+    try {
+      const url = URL.createObjectURL(file);
+      try {
+        const { data: { text } } = await worker.recognize(url);
+        return text || "";
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    } finally {
+      await worker.terminate();
+    }
   }
 
   /**
@@ -170,15 +269,16 @@ export class MaterialImporter {
 
   /**
    * PDF-Dateien strukturiert auslesen.
+   * Erst versucht pdf.js die eingebetteten Textobjekte zu extrahieren.
+   * Enthält eine Seite danach nur sehr wenig Text (gescannt oder
+   * handschriftlich), rendert sie als Bild und schickt es durch
+   * Tesseract-OCR (deu + eng).
    */
-  async extractPDF(file) {
+  async extractPDF(file, report = () => {}) {
 
-    const pdfjs = await import(
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
-    );
+    const pdfjs = await import(PDFJS_URL);
 
-    pdfjs.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+    pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
 
     const buffer = await file.arrayBuffer();
 
@@ -186,7 +286,10 @@ export class MaterialImporter {
       data: buffer
     }).promise;
 
-    const pages = [];
+    const pageEntries = [];
+    const sparsePages = [];
+
+    report("pdf-text-start", { total: pdf.numPages });
 
     for (
       let pageNumber = 1;
@@ -203,14 +306,89 @@ export class MaterialImporter {
 
       const pageText = lines.join("\n");
 
-      pages.push(
-        `--- Seite ${pageNumber} ---\n\n${pageText}`
-      );
+      pageEntries.push({
+        pageNumber,
+        text: pageText,
+        page
+      });
+
+      if (pageText.replace(/\s+/g, "").length < OCR_PAGE_THRESHOLD) {
+        sparsePages.push(pageNumber);
+      }
+
+      report("pdf-text-progress", {
+        current: pageNumber,
+        total: pdf.numPages
+      });
     }
+
+    // OCR-Fallback für Seiten mit wenig/keinem eingebetteten Text.
+    let usedOCR = false;
+    if (sparsePages.length > 0) {
+      usedOCR = true;
+      report("ocr-start", { pages: sparsePages.length });
+
+      try {
+        const Tesseract = await loadTesseract();
+
+        const worker = await Tesseract.createWorker(["deu", "eng"], 1, {
+          logger: m => {
+            if (m.status === "recognizing text") {
+              report("ocr-progress", {
+                percentage: Math.round((m.progress || 0) * 100)
+              });
+            }
+          }
+        });
+
+        try {
+          for (let i = 0; i < sparsePages.length; i++) {
+            const pageNumber = sparsePages[i];
+            report("ocr-page", {
+              current: i + 1,
+              total: sparsePages.length,
+              pageNumber
+            });
+
+            const entry = pageEntries[pageNumber - 1];
+            const viewport = entry.page.getViewport({ scale: 2.0 });
+
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.ceil(viewport.width);
+            canvas.height = Math.ceil(viewport.height);
+
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            await entry.page.render({
+              canvasContext: ctx,
+              viewport
+            }).promise;
+
+            const { data: { text } } = await worker.recognize(canvas);
+            const ocrText = (text || "").trim();
+            if (ocrText) {
+              entry.text = ocrText;
+            }
+          }
+        } finally {
+          await worker.terminate();
+        }
+      } catch (ocrError) {
+        console.warn("ATELIER AI: OCR fehlgeschlagen, nutze nur pdf.js-Text:", ocrError);
+        report("ocr-error", { message: ocrError?.message || String(ocrError) });
+      }
+    }
+
+    const pages = pageEntries.map(entry =>
+      `--- Seite ${entry.pageNumber} ---\n\n${entry.text}`
+    );
 
     return {
       content: pages.join("\n\n"),
-      pageCount: pdf.numPages
+      pageCount: pdf.numPages,
+      usedOCR
     };
   }
 
