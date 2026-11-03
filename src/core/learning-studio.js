@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zi";
-import { knowledgeBase } from "./knowledge.js?v=20261103zi";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zj";
+import { knowledgeBase } from "./knowledge.js?v=20261103zj";
 
-const BUILD = "20261103zi";
+const BUILD = "20261103zj";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -853,7 +853,7 @@ function splitIntoBlocks(text, primaryKey) {
  * Nur für Flashcards sinnvoll – MC und Lückentexte brauchen Struktur,
  * die nicht aus Rohtext rekonstruiert werden kann.
  */
-function rescueFromRaw(format, raw, topic) {
+function rescueFromRaw(format, raw) {
   if (format !== "flashcards") return null;
 
   const text = stripMarkdown(String(raw || ""))
@@ -863,35 +863,23 @@ function rescueFromRaw(format, raw, topic) {
 
   if (text.length < 20) return null;
 
-  // Variante 1: Fragezeichen in der Mitte vorhanden.
+  // Variante 1: Fragezeichen in der Mitte vorhanden → davor = Frage,
+  // danach = Antwort. Antwort auf ersten Satz nach dem Fragezeichen
+  // kürzen, damit die Karte knapp bleibt.
   const qMarkIdx = text.search(/[?¿]/);
   if (qMarkIdx > 10 && qMarkIdx < text.length - 10) {
     const q = text.slice(0, qMarkIdx + 1).trim();
-    const a = text.slice(qMarkIdx + 1).trim();
-    if (q.length >= 5 && a.length >= 5) {
-      return [{ question: q, answer: a }];
+    const rest = text.slice(qMarkIdx + 1).trim();
+    const firstSentence = rest.match(/^([^.!?]{10,200}[.!?])/)?.[1]?.trim()
+      || rest.slice(0, 200).trim();
+    if (q.length >= 5 && firstSentence.length >= 5) {
+      return [{ question: q, answer: firstSentence }];
     }
   }
 
-  // Variante 2: mehrere Sätze – erster Satz als Frage, Rest als Antwort.
-  const sentences = text.match(/[^.!?]+[.!?]+/g);
-  if (sentences && sentences.length >= 2) {
-    const q = sentences[0].trim();
-    const a = sentences.slice(1).join(" ").trim();
-    if (q.length >= 5 && a.length >= 5) {
-      return [{ question: q, answer: a }];
-    }
-  }
-
-  // Variante 3: nur ein Textblock – als Antwort nutzen, Frage aus Thema.
-  const topicStr = String(topic || "").trim();
-  if (topicStr.length >= 3 && text.length >= 20) {
-    return [{
-      question: `Was ist zum Thema „${topicStr}" wichtig?`,
-      answer: text.slice(0, 400)
-    }];
-  }
-
+  // Keine echte Q&A-Struktur auffindbar → wir rekonstruieren KEINE
+  // Pseudo-Karte. Lieber nichts zurückgeben als eine Karte, die nicht
+  // dem Q&A-Prinzip folgt.
   return null;
 }
 
@@ -986,7 +974,7 @@ async function generateBatch({
     );
 
     // Rettungsanker: aus der Rohantwort selbst eine Karte bauen.
-    const rescued = rescueFromRaw(format, raw, topic);
+    const rescued = rescueFromRaw(format, raw);
     if (rescued) {
       try {
         const validated = validateItems(format, rescued);
@@ -1242,6 +1230,64 @@ export class LearningStudio {
         if (gpuDeathPattern.test(String(retryError?.message || ""))) {
           modelUnrecoverable = true;
         }
+      }
+    }
+
+    // Nachlieferung: hat das Modell weniger als gewünscht geliefert,
+    // bitten wir in einer weiteren Runde um den Rest. Höchstens zwei
+    // Nachlieferungen, damit der GPU nicht überlastet wird.
+    let topUpAttempts = 0;
+    while (
+      items.length < amount &&
+      !modelUnrecoverable &&
+      atelierAI.getStatus().localModel.ready &&
+      topUpAttempts < 2
+    ) {
+      topUpAttempts += 1;
+      const missing = amount - items.length;
+
+      if (typeof onProgress === "function") {
+        onProgress({
+          completed: items.length,
+          attempted: amount,
+          total: amount,
+          percentage: 70 + topUpAttempts * 10,
+          note: `Es fehlen noch ${missing} Übung${missing === 1 ? "" : "en"} – Nachlieferung …`
+        });
+      }
+
+      try {
+        const result = await generateBatch({
+          format,
+          subject,
+          topic,
+          level,
+          materialContext,
+          count: Math.min(5, missing),
+          language
+        });
+
+        // Doppelte Fragen (Textgleichheit) herausfiltern, damit die
+        // Nachlieferung tatsächlich neue Karten bringt.
+        const existingQuestions = new Set(
+          items.map(entry => normalizeForCompare(entry.question || entry.text || ""))
+        );
+        for (const entry of result.items) {
+          const key = normalizeForCompare(entry.question || entry.text || "");
+          if (!existingQuestions.has(key)) {
+            items.push(entry);
+            existingQuestions.add(key);
+          }
+        }
+      } catch (topUpError) {
+        failures.push({
+          index: failures.length + 1,
+          message: "Nachlieferung fehlgeschlagen: " + (topUpError?.message || String(topUpError))
+        });
+        if (gpuDeathPattern.test(String(topUpError?.message || ""))) {
+          modelUnrecoverable = true;
+        }
+        break;
       }
     }
 

@@ -533,9 +533,60 @@ export class KnowledgeBase {
       });
     }
 
-    return matches
+    const sorted = matches
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
+
+    // Fallback: Treffer leer, aber die Schülerin HAT Materialien zu
+    // diesem Fach hochgeladen. Dann die ersten Chunks des neuesten
+    // Materials als „thematischer Hintergrund" mitgeben, damit die KI
+    // die eigenen Materialien überhaupt sieht. Verhindert generische
+    // Übungen, die am konkreten Stoff vorbeigehen.
+    if (!sorted.length && materials.length) {
+      const freshest = [...materials].sort((a, b) => {
+        const timeA = new Date(a.importedAt || 0).getTime();
+        const timeB = new Date(b.importedAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+      const fallback = [];
+      let used = 0;
+
+      for (const material of freshest) {
+        if (used >= MAX_TOTAL_CONTEXT) break;
+
+        const chunks = splitIntoChunks(material.content);
+        const take = chunks.slice(0, MAX_CHUNKS_PER_MATERIAL);
+        let selectedContent = "";
+
+        for (const chunk of take) {
+          if (used + chunk.length > MAX_TOTAL_CONTEXT) {
+            const remaining = MAX_TOTAL_CONTEXT - used;
+            if (remaining > 150) {
+              selectedContent += (selectedContent ? "\n\n" : "") + chunk.slice(0, remaining);
+              used = MAX_TOTAL_CONTEXT;
+            }
+            break;
+          }
+          selectedContent += (selectedContent ? "\n\n" : "") + chunk;
+          used += chunk.length;
+        }
+
+        if (selectedContent) {
+          fallback.push({
+            ...material,
+            content: selectedContent,
+            matchedConcepts: (material.concepts || []).slice(0, 5),
+            score: 0,
+            fallback: true
+          });
+        }
+      }
+
+      return fallback.slice(0, 2);
+    }
+
+    return sorted;
   }
 
   /**
