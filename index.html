@@ -258,7 +258,7 @@ h2{font-size:32px}
       </div>
     </div>
     <div class="field"><label for="topic">Thema oder Lerngebiet</label><input id="topic" placeholder="z. B. Zellatmung oder Integralrechnung"></div>
-    <div class="field"><label for="count">Anzahl der Übungen</label><select id="count"><option value="3">3 Übungen</option><option value="5">5 Übungen</option><option value="8" selected>8 Übungen</option><option value="10">10 Übungen</option><option value="12">12 Übungen</option></select></div>
+    <div class="field"><label for="count">Anzahl der Übungen</label><select id="count"><option value="3">3 Übungen</option><option value="5" selected>5 Übungen</option><option value="8">8 Übungen</option><option value="10">10 Übungen</option></select></div>
     <div class="field"><label><input type="checkbox" id="useMaterials" checked style="width:auto"> Eigene Unterrichtsmaterialien berücksichtigen</label></div>
     <button class="button" id="generate">Lernübungen erstellen</button>
     <div id="generationStatus" class="status">Wähle ein Format und gib dein Thema ein.</div>
@@ -545,6 +545,26 @@ window.addEventListener("unhandledrejection",event=>{
   errorDisplay.textContent="Modulfehler: "+String(event.reason);
 });
 
+// Persistenten Speicher anfordern. Ohne diesen Schritt gibt Safari auf
+// unbekannten Domains (z.B. frische Cloudflare-Tunnel-URLs) nur einen
+// Mini-Quota frei, und WebLLM scheitert beim Schreiben des Modells.
+(async()=>{
+  try{
+    if(navigator.storage&&navigator.storage.persist){
+      const granted=await navigator.storage.persist();
+      console.log("ATELIER AI – persistenter Speicher:",granted?"gewährt":"abgelehnt");
+      if(navigator.storage.estimate){
+        const{quota,usage}=await navigator.storage.estimate();
+        console.log("ATELIER AI – Speicher-Quota:",
+          quota?(quota/1024/1024/1024).toFixed(2)+" GB":"unbekannt",
+          "– belegt:",usage?(usage/1024/1024).toFixed(0)+" MB":"0 MB");
+      }
+    }
+  }catch(error){
+    console.warn("ATELIER AI – Speicherabfrage fehlgeschlagen:",error);
+  }
+})();
+
 const subjects=[
   "Mathematik","Deutsch","Geographie","Chemie","Musik","Sport",
   "Spanisch","Englisch","Evangelische Religion","Biologie",
@@ -579,11 +599,13 @@ async function safeImport(name,path){
   }
 }
 
+const ATELIER_VERSION = "20261103za";
+
 const [aiModule,learningModule,importerModule,knowledgeModule]=await Promise.all([
-  safeImport("KI-Modul","./src/core/ai.js"),
-  safeImport("Lernstudio-Modul","./src/core/learning-studio.js"),
-  safeImport("Materialimport-Modul","./src/core/material-import.js"),
-  safeImport("Wissensbasis-Modul","./src/core/knowledge.js")
+  safeImport("KI-Modul",`./src/core/ai.js?v=${ATELIER_VERSION}`),
+  safeImport("Lernstudio-Modul",`./src/core/learning-studio.js?v=${ATELIER_VERSION}`),
+  safeImport("Materialimport-Modul",`./src/core/material-import.js?v=${ATELIER_VERSION}`),
+  safeImport("Wissensbasis-Modul",`./src/core/knowledge.js?v=${ATELIER_VERSION}`)
 ]);
 
 const atelierAI=aiModule?.atelierAI;
@@ -599,7 +621,7 @@ if(moduleErrors.length){
     moduleErrors.join(" | ");
 }
 
-async function askAI({subject,mode,question,level="mittel",materials=true}){
+async function askAI({subject,mode,question,level="mittel",materials=true,history=[],searchQuery=null}){
   if(!atelierAI){
     throw new Error("Das KI-Modul konnte nicht geladen werden. Prüfe src/core/ai.js.");
   }
@@ -608,12 +630,16 @@ async function askAI({subject,mode,question,level="mittel",materials=true}){
     throw new Error("Bitte zuerst unter KI-Modell ein lokales Modell laden.");
   }
 
+  const materialQuery=typeof searchQuery==="string"&&searchQuery.trim()
+    ?searchQuery
+    :question;
+
   const context=materials&&knowledgeBase
-    ?await knowledgeBase.search(question,subject)
+    ?await knowledgeBase.search(materialQuery,subject)
     :[];
 
   const request=atelierAI.createRequest({
-    subject,mode,question,materials:context,grade:12,level
+    subject,mode,question,materials:context,history,grade:12,level
   });
 
   const response=await atelierAI.ask(request);
@@ -714,25 +740,16 @@ $("askTutor").addEventListener("click", async () => {
   );
 
   try {
-    const conversationContext = tutorConversation
-      .slice(-12)
-      .map(message => {
-        const role =
-          message.role === "user" ? "SCHÜLER" : "LERNASSISTENT";
-
-        return role + ":\n" + message.content;
-      })
-      .join("\n\n");
+    const priorHistory = tutorConversation
+      .slice(0, -1)
+      .slice(-10);
 
     const answer = await askAI({
       subject: $("tutorSubject").value,
       mode: $("tutorMode").value,
-      question:
-        "Setze das folgende Gespräch fort. " +
-        "Beziehe dich auf frühere Nachrichten und beantworte " +
-        "insbesondere die letzte Schülernachricht. " +
-        "Antworte fachlich korrekt und verständlich.\n\n" +
-        conversationContext,
+      question,
+      history: priorHistory,
+      searchQuery: question,
       level: "anspruchsvoll",
       materials: $("tutorMaterials").checked
     });
@@ -860,7 +877,12 @@ $("generate").addEventListener("click",async()=>{
       topic,
       count:Number($("count").value),
       level:$("level").value,
-      useMaterials:$("useMaterials").checked
+      useMaterials:$("useMaterials").checked,
+      onProgress:report=>{
+        if(report&&report.note){
+          setStatus("generationStatus",report.note);
+        }
+      }
     });
 
     if(!currentSet||!Array.isArray(currentSet.items)||!currentSet.items.length){
@@ -872,10 +894,17 @@ $("generate").addEventListener("click",async()=>{
     selectedAnswers={};
     completed={};
 
+    const sourceNote=currentSet.usedExternalSource
+      ?" Externe Quelle (Wikipedia) genutzt."
+      :(currentSet.materialCount
+        ?` ${currentSet.materialCount} eigene Materialien berücksichtigt.`
+        :" Ohne Materialien (eigenes Fachwissen des Modells).");
+    const failureNote=currentSet.failures&&currentSet.failures.length
+      ?` ${currentSet.failures.length} von ${currentSet.requested||currentSet.items.length} Versuchen übersprungen.`
+      :"";
     setStatus(
       "generationStatus",
-      currentSet.items.length+" Übungen erstellt. "+
-      (currentSet.materialCount||0)+" Materialien berücksichtigt.",
+      currentSet.items.length+" Übungen erstellt."+sourceNote+failureNote,
       "success"
     );
 
@@ -1575,7 +1604,10 @@ $("loadModels").addEventListener("click",async()=>{
     models.forEach(model=>{
       const option=document.createElement("option");
       option.value=model.id;
-      option.textContent=model.name;
+      const vramLabel=Number.isFinite(model.vram)
+        ?` – ${(model.vram/1024).toFixed(1)} GB VRAM`
+        :"";
+      option.textContent=model.name+vramLabel;
       select.append(option);
     });
 
