@@ -9,8 +9,8 @@
  * - Mehrsprachige Erzeugung je nach Fach (DE/EN/ES)
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zc";
-import { knowledgeBase } from "./knowledge.js?v=20261103zc";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zd";
+import { knowledgeBase } from "./knowledge.js?v=20261103zd";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -739,9 +739,13 @@ export class LearningStudio {
       }
     }
 
+    // Harte Obergrenze 5 für iPad-Verträglichkeit. Mehr als 5 Übungen
+    // in einem Batch sprengen zuverlässig den Metal-Speicher kleiner
+    // Geräte. Der Nutzer kann bei Bedarf einfach ein zweites Mal
+    // "Erzeugen" drücken.
     const amount = Math.max(
-      3,
-      Math.min(10, Number(count) || 5)
+      2,
+      Math.min(5, Number(count) || 5)
     );
 
     let materials = [];
@@ -932,12 +936,23 @@ export class LearningStudio {
       const lastMessage =
         failures[failures.length - 1]?.message || "unbekannt";
 
+      // Bei totalem GPU-Ausfall ist Reload auf iPadOS Safari leider
+      // der einzig verlässliche Weg. Klarer Hinweis statt vager
+      // Fehlermeldung.
+      if (modelUnrecoverable) {
+        throw new Error(
+          "Das KI-Modell hat seinen GPU-Zustand verloren und konnte " +
+          "trotz zweier Rettungsversuche nicht wiederhergestellt werden. " +
+          "Bitte in Safari diesen Tab komplett schließen (Tab-Übersicht → " +
+          "X-Symbol) und die Seite neu öffnen. Das Modell liegt im Cache, " +
+          "lädt also schnell wieder."
+        );
+      }
+
       throw new Error(
         "Es konnte keine einzige Übung erstellt werden. " +
         "Letzter Grund: " + lastMessage +
-        (modelUnrecoverable
-          ? ""
-          : " – Falls das Problem anhält: Browser-Tab komplett schließen und Seite neu öffnen.")
+        " – Bitte ein kleineres Modell wählen oder nur 2–3 Übungen auf einmal anfordern."
       );
     }
 

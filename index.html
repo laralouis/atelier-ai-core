@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#F7F5F0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>ATELIER AI – Learning Space</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -509,7 +512,7 @@ h2{font-size:32px}
 
 </main>
 
-<footer><div class="shell">ATELIER AI · Independent Learning Space · Gymnasium Bayern</div></footer>
+<footer><div class="shell">ATELIER AI · Independent Learning Space · Gymnasium Bayern · <span id="versionTag" style="opacity:.6"></span></div></footer>
 
 <!-- Unabhängige Navigation -->
 <script>
@@ -599,7 +602,12 @@ async function safeImport(name,path){
   }
 }
 
-const ATELIER_VERSION = "20261103zc";
+const ATELIER_VERSION = "20261103zd";
+
+(() => {
+  const tag = document.getElementById("versionTag");
+  if (tag) tag.textContent = "v " + ATELIER_VERSION;
+})();
 
 const [aiModule,learningModule,importerModule,knowledgeModule]=await Promise.all([
   safeImport("KI-Modul",`./src/core/ai.js?v=${ATELIER_VERSION}`),

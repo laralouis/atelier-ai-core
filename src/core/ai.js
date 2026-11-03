@@ -7,7 +7,7 @@
  * mit dem lokalen WebLLM-Modell.
  */
 
-import { localModel } from "./local-model.js?v=20261103zc";
+import { localModel } from "./local-model.js?v=20261103zd";
 
 export const ATELIER_CONFIG = {
   name: "ATELIER AI",

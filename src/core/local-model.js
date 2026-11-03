@@ -7,14 +7,17 @@
  */
 
 const WEBLLM_URL = "https://esm.run/@mlc-ai/web-llm@0.2.87";
-const MAX_CONTEXT_CHARS = 2000;
-const MAX_LOCAL_CHARS = 1500;
-const MAX_EXTERNAL_CHARS = 500;
-const MAX_OUTPUT_TOKENS = 500;
-const MAX_OUTPUT_TOKENS_QUIZ = 320;
-const MAX_HISTORY_MESSAGES = 4;
-const MAX_HISTORY_CHARS_PER_MESSAGE = 600;
-const MAX_HISTORY_CHARS_TOTAL = 1800;
+// Alle Zeichen-/Token-Limits bewusst klein gehalten: iPad-Metal OOM-t
+// schnell, wenn Prompt + KV-Cache + Output zusammen zu groß werden.
+// Kürzerer Kontext → kleinere KV-Cache → GPU überlebt zuverlässig.
+const MAX_CONTEXT_CHARS = 900;
+const MAX_LOCAL_CHARS = 600;
+const MAX_EXTERNAL_CHARS = 300;
+const MAX_OUTPUT_TOKENS = 400;
+const MAX_OUTPUT_TOKENS_QUIZ = 300;
+const MAX_HISTORY_MESSAGES = 2;
+const MAX_HISTORY_CHARS_PER_MESSAGE = 400;
+const MAX_HISTORY_CHARS_TOTAL = 800;
 
 function sanitizeHistory(history) {
   if (!Array.isArray(history)) return [];
@@ -570,14 +573,15 @@ export class LocalModel {
         // WebLLM 0.2.87 fehlerhaft ("Failed to initialize grammar matcher").
         // Wir setzen daher ausschließlich auf prompt-basierte JSON-Ausgabe.
         //
-        // max_tokens KONSERVATIV halten: iPad-Metal OOM-t ab etwa 800
-        // Tokens Streaming-Länge. Lieber kürzer antworten (und ggf.
-        // weniger Übungen liefern) als die GPU zu zerstören. Der Parser
-        // nimmt entgegen, was er bekommt.
+        // max_tokens EXTREM konservativ halten: iPad-Metal OOM-t schon
+        // bei ~500 Tokens Streaming-Länge mit mittleren Modellen. Lieber
+        // kürzer antworten (und ggf. weniger Übungen liefern) als die
+        // GPU zu zerstören. Der Parser nimmt entgegen, was er bekommt
+        // und akzeptiert auch 2-3 Übungen bei Anfrage von 5.
         const quizCount = Number(request.metadata?.quizCount) || 1;
         const quizTokens = Math.min(
-          700,
-          180 + quizCount * 100
+          480,
+          150 + quizCount * 70
         );
 
         const stream = await engine.chat.completions.create({
