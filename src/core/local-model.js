@@ -9,15 +9,14 @@
 const WEBLLM_URL = "https://esm.run/@mlc-ai/web-llm@0.2.87";
 // Alle Zeichen-/Token-Limits bewusst klein gehalten: iPad-Metal OOM-t
 // schnell, wenn Prompt + KV-Cache + Output zusammen zu groß werden.
-// Kürzerer Kontext → kleinere KV-Cache → GPU überlebt zuverlässig.
-// Lokale Materialien bekommen deutlich mehr Platz als externe Quellen,
-// weil es die eigenen Unterrichts-/Hefteinträge der Schülerin sind –
-// die sollen das Herzstück der Übungen sein.
-const MAX_CONTEXT_CHARS = 2200;
-const MAX_LOCAL_CHARS = 1600;
-const MAX_EXTERNAL_CHARS = 400;
-const MAX_OUTPUT_TOKENS = 400;
-const MAX_OUTPUT_TOKENS_QUIZ = 350;
+// Lokale Materialien bekommen etwas mehr Platz als externe Quellen,
+// aber alles so klein wie möglich – der iPad GPU-Adapter verliert
+// sonst zuverlässig den Zustand und kann nicht neu geladen werden.
+const MAX_CONTEXT_CHARS = 1300;
+const MAX_LOCAL_CHARS = 900;
+const MAX_EXTERNAL_CHARS = 300;
+const MAX_OUTPUT_TOKENS = 350;
+const MAX_OUTPUT_TOKENS_QUIZ = 280;
 const MAX_HISTORY_MESSAGES = 2;
 const MAX_HISTORY_CHARS_PER_MESSAGE = 400;
 const MAX_HISTORY_CHARS_TOTAL = 800;

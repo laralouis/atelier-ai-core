@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zj";
-import { knowledgeBase } from "./knowledge.js?v=20261103zj";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zk";
+import { knowledgeBase } from "./knowledge.js?v=20261103zk";
 
-const BUILD = "20261103zj";
+const BUILD = "20261103zk";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -1008,7 +1008,7 @@ export class LearningStudio {
     format,
     subject,
     topic,
-    count = 5,
+    count = 3,
     level = "grundlegend",
     useMaterials = true,
     onProgress = null
@@ -1041,13 +1041,14 @@ export class LearningStudio {
       }
     }
 
-    // Harte Obergrenze 5 für iPad-Verträglichkeit. Mehr als 5 Übungen
+    // Harte Obergrenze 4 für iPad-Verträglichkeit. Mehr als 4 Übungen
     // in einem Batch sprengen zuverlässig den Metal-Speicher kleiner
-    // Geräte. Der Nutzer kann bei Bedarf einfach ein zweites Mal
-    // "Erzeugen" drücken.
+    // Geräte, weil Output-Länge direkt gegen den KV-Cache zählt. Der
+    // Nutzer kann bei Bedarf einfach ein zweites Mal "Erzeugen" drücken,
+    // dann sind die ersten Karten schon da und das Modell startet frisch.
     const amount = Math.max(
       2,
-      Math.min(5, Number(count) || 5)
+      Math.min(4, Number(count) || 3)
     );
 
     let localMaterials = [];
@@ -1233,63 +1234,11 @@ export class LearningStudio {
       }
     }
 
-    // Nachlieferung: hat das Modell weniger als gewünscht geliefert,
-    // bitten wir in einer weiteren Runde um den Rest. Höchstens zwei
-    // Nachlieferungen, damit der GPU nicht überlastet wird.
-    let topUpAttempts = 0;
-    while (
-      items.length < amount &&
-      !modelUnrecoverable &&
-      atelierAI.getStatus().localModel.ready &&
-      topUpAttempts < 2
-    ) {
-      topUpAttempts += 1;
-      const missing = amount - items.length;
-
-      if (typeof onProgress === "function") {
-        onProgress({
-          completed: items.length,
-          attempted: amount,
-          total: amount,
-          percentage: 70 + topUpAttempts * 10,
-          note: `Es fehlen noch ${missing} Übung${missing === 1 ? "" : "en"} – Nachlieferung …`
-        });
-      }
-
-      try {
-        const result = await generateBatch({
-          format,
-          subject,
-          topic,
-          level,
-          materialContext,
-          count: Math.min(5, missing),
-          language
-        });
-
-        // Doppelte Fragen (Textgleichheit) herausfiltern, damit die
-        // Nachlieferung tatsächlich neue Karten bringt.
-        const existingQuestions = new Set(
-          items.map(entry => normalizeForCompare(entry.question || entry.text || ""))
-        );
-        for (const entry of result.items) {
-          const key = normalizeForCompare(entry.question || entry.text || "");
-          if (!existingQuestions.has(key)) {
-            items.push(entry);
-            existingQuestions.add(key);
-          }
-        }
-      } catch (topUpError) {
-        failures.push({
-          index: failures.length + 1,
-          message: "Nachlieferung fehlgeschlagen: " + (topUpError?.message || String(topUpError))
-        });
-        if (gpuDeathPattern.test(String(topUpError?.message || ""))) {
-          modelUnrecoverable = true;
-        }
-        break;
-      }
-    }
+    // Hinweis: Keine automatische Nachlieferung mehr. Jede zusätzliche
+    // Inferenzrunde kostet KV-Cache-Speicher und hat auf dem iPad
+    // regelmäßig den WebGPU-Adapter gekillt. Lieber liefern wir, was
+    // da ist – der Nutzer kann für mehr Karten einfach erneut auf
+    // "Erzeugen" tippen; dann startet das Modell mit frischem Zustand.
 
     if (typeof onProgress === "function") {
       onProgress({
