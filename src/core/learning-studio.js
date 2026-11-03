@@ -9,8 +9,8 @@
  * - Mehrsprachige Erzeugung je nach Fach (DE/EN/ES)
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103za";
-import { knowledgeBase } from "./knowledge.js?v=20261103za";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zb";
+import { knowledgeBase } from "./knowledge.js?v=20261103zb";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -804,17 +804,45 @@ export class LearningStudio {
     // laden, dann einen kleineren Batch versuchen. Die Modell-Datei
     // liegt bereits im IndexedDB-Cache – es wird nur die WebGPU-Pipeline
     // neu aufgebaut, kein Netzwerk-Download.
-    if (items.length === 0 && modelUnrecoverable) {
+    //
+    // Zwei Anläufe: iPadOS Safari gibt den GPU-Adapter nach einem Dispose
+    // manchmal erst nach 10+ Sekunden wieder frei. Wenn der erste
+    // Rettungsversuch wegen „GPU-Zugriff blockiert" scheitert, warten
+    // wir länger und versuchen es noch einmal.
+    const reloadAttempts = [
+      { label: "KI-Modell wird automatisch neu geladen …", preWait: 0 },
+      { label: "GPU reagiert noch nicht – zweiter Rettungsversuch …", preWait: 6000 }
+    ];
+
+    for (const attempt of reloadAttempts) {
+      if (items.length > 0 || !modelUnrecoverable) break;
+
       console.warn(
-        "ATELIER AI: GPU-Zustand verloren – versuche automatisches Neuladen des Modells."
+        "ATELIER AI: GPU-Zustand verloren – " +
+        (attempt.preWait > 0 ? "zweiter " : "") +
+        "automatischer Neuladeversuch."
       );
+
+      if (attempt.preWait > 0) {
+        if (typeof onProgress === "function") {
+          onProgress({
+            completed: 0,
+            attempted: 0,
+            total: amount,
+            percentage: 20,
+            note: "GPU-Zugriff war blockiert – iPad bekommt kurz Zeit, den Adapter freizugeben …"
+          });
+        }
+        await new Promise(resolve => setTimeout(resolve, attempt.preWait));
+      }
+
       if (typeof onProgress === "function") {
         onProgress({
           completed: 0,
           attempted: 0,
           total: amount,
-          percentage: 15,
-          note: "KI-Modell wird automatisch neu geladen …"
+          percentage: attempt.preWait > 0 ? 30 : 15,
+          note: attempt.label
         });
       }
 
@@ -825,7 +853,7 @@ export class LearningStudio {
               completed: 0,
               attempted: 0,
               total: amount,
-              percentage: 15 + Math.round((report?.progress || 0) * 0.4),
+              percentage: 30 + Math.round((report?.progress || 0) * 0.3),
               note: report?.text || "KI-Modell wird neu geladen …"
             });
           }
@@ -840,13 +868,14 @@ export class LearningStudio {
             completed: 0,
             attempted: 0,
             total: amount,
-            percentage: 60,
+            percentage: 65,
             note: "Übungen werden erzeugt …"
           });
         }
+        break;
       } catch (reloadError) {
         failures.push({
-          index: 2,
+          index: failures.length + 1,
           message:
             "Automatisches Neuladen fehlgeschlagen: " +
             (reloadError?.message || String(reloadError))

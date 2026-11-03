@@ -323,19 +323,30 @@ export class LocalModel {
       };
     }
 
-    // Nach einem Entladen gibt Safari auf dem iPad den GPU-Adapter
-    // manchmal verzögert wieder frei. Deshalb mehrfach versuchen.
+    // Nach einem Dispose gibt iPadOS Safari den WebGPU-Adapter oft erst
+    // nach mehreren Sekunden wieder frei – Metal-Ressourcen werden
+    // asynchron freigegeben. Wir probieren über ~13 Sekunden hinweg mit
+    // zunehmender Pause und wechselnden PowerPreferences.
     const attempts = [
-      { powerPreference: "high-performance" },
-      { powerPreference: "low-power" },
-      {}
+      { opts: { powerPreference: "high-performance" }, wait: 0 },
+      { opts: { powerPreference: "low-power" }, wait: 600 },
+      { opts: {}, wait: 1200 },
+      { opts: { powerPreference: "high-performance" }, wait: 2000 },
+      { opts: { powerPreference: "low-power" }, wait: 3000 },
+      { opts: {}, wait: 4500 }
     ];
 
     let lastError = null;
 
     for (let i = 0; i < attempts.length; i++) {
+      const { opts, wait } = attempts[i];
+
+      if (wait > 0) {
+        await new Promise(resolve => setTimeout(resolve, wait));
+      }
+
       try {
-        const adapter = await navigator.gpu.requestAdapter(attempts[i]);
+        const adapter = await navigator.gpu.requestAdapter(opts);
 
         if (adapter) {
           return {
@@ -345,11 +356,6 @@ export class LocalModel {
         }
       } catch (error) {
         lastError = error;
-      }
-
-      // Kurze Pause, damit Safari den Adapter neu bereitstellen kann.
-      if (i < attempts.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
 
@@ -432,9 +438,12 @@ export class LocalModel {
           }
         }
 
-        // Länger warten, damit Safari den GPU-Adapter nach einem
-        // disposed-Zustand sauber wieder freigeben kann.
-        await new Promise(resolve => setTimeout(resolve, 600));
+        // Deutlich länger warten, damit iPadOS Safari den GPU-Adapter
+        // nach einem Dispose-Zustand sauber wieder freigeben kann.
+        // Metal gibt Ressourcen asynchron frei – 600ms sind zu knapp,
+        // 2 Sekunden sind empirisch die Untergrenze, bei der der neue
+        // requestAdapter() auf dem iPad wieder zuverlässig funktioniert.
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         const support = await this.checkSupport();
 
