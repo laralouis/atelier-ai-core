@@ -580,10 +580,21 @@ export class LocalModel {
         // kürzer antworten (und ggf. weniger Übungen liefern) als die
         // GPU zu zerstören. Der Parser nimmt entgegen, was er bekommt
         // und akzeptiert auch 2-3 Übungen bei Anfrage von 5.
+        // Format-abhängige Token-Veranschlagung: eine MC-Übung braucht
+        // typisch 110-140 Tokens (Frage + 4 Optionen + „Richtig:" +
+        // Erklärung), ein Lückentext 90-110 (Satz mit mehreren Lücken +
+        // Lösungsliste + Erklärung), eine Karteikarte nur 50-70.
+        // Deckel bei 620, damit iPad-Metal nicht OOM-t.
         const quizCount = Number(request.metadata?.quizCount) || 1;
+        const quizFormat = request.metadata?.quizFormat || "flashcards";
+        const perItem = {
+          multipleChoice: 130,
+          cloze: 110,
+          flashcards: 70
+        }[quizFormat] || 90;
         const quizTokens = Math.min(
-          480,
-          150 + quizCount * 70
+          620,
+          180 + quizCount * perItem
         );
 
         const stream = await engine.chat.completions.create({

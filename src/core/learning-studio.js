@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zl";
-import { knowledgeBase } from "./knowledge.js?v=20261103zl";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zm";
+import { knowledgeBase } from "./knowledge.js?v=20261103zm";
 
-const BUILD = "20261103zl";
+const BUILD = "20261103zm";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -379,19 +379,19 @@ Explicación: <breve explicación académica>`
     example: {
       de:
 `Übung 1:
-Satz: Der Gregorianische Choral ist {{LUECKE}} und folgt den {{LUECKE}}.
-Lösungen: einstimmig; Kirchentonarten
-Erklärung: Der Gregorianische Choral ist eine einstimmige liturgische Gesangsform, die in den acht Kirchentonarten (Modi) notiert ist.`,
+Satz: Der Gregorianische Choral entstand im {{LUECKE}} Jahrhundert, ist {{LUECKE}} und {{LUECKE}}, folgt den acht {{LUECKE}} und wird vorwiegend in {{LUECKE}} notiert.
+Lösungen: 8.; einstimmig; unbegleitet; Kirchentonarten; Neumen
+Erklärung: Der Gregorianische Choral geht auf das 8. Jahrhundert zurück, ist monodisch (einstimmig und unbegleitet), basiert auf den acht Kirchentonarten (Modi) und wurde ursprünglich in Neumen notiert.`,
       en:
 `Exercise 1:
-Sentence: Gregorian chant is {{LUECKE}} and follows the {{LUECKE}}.
-Solutions: monophonic; church modes
-Explanation: Gregorian chant is a monophonic liturgical form of singing based on the eight church modes.`,
+Sentence: Gregorian chant emerged in the {{LUECKE}} century, is {{LUECKE}} and {{LUECKE}}, follows the eight {{LUECKE}} and was originally notated in {{LUECKE}}.
+Solutions: 8th; monophonic; unaccompanied; church modes; neumes
+Explanation: Gregorian chant dates back to the 8th century, is monodic (monophonic and unaccompanied), based on the eight church modes and was originally notated in neumes.`,
       es:
 `Ejercicio 1:
-Oración: El canto gregoriano es {{LUECKE}} y sigue los {{LUECKE}}.
-Soluciones: monódico; modos eclesiásticos
-Explicación: El canto gregoriano es una forma de canto litúrgico monódico basada en los ocho modos eclesiásticos.`
+Oración: El canto gregoriano surgió en el siglo {{LUECKE}}, es {{LUECKE}} y {{LUECKE}}, sigue los ocho {{LUECKE}} y originalmente se notaba en {{LUECKE}}.
+Soluciones: VIII; monódico; sin acompañamiento; modos eclesiásticos; neumas
+Explicación: El canto gregoriano surge en el siglo VIII, es monódico y sin acompañamiento, se basa en los ocho modos eclesiásticos y originalmente se notaba en neumas.`
     },
     parse(text) {
       let clean = stripMarkdown(text);
@@ -736,6 +736,61 @@ const MC_RULES = {
   es: "- Las cuatro opciones A, B, C y D DEBEN tener un contenido DISTINTO cada una. Solo una es correcta; las otras tres son alternativas verosímiles pero claramente incorrectas."
 };
 
+// Beschreibt den geforderten Schwierigkeitsgrad fachdidaktisch. Ohne
+// diese Zeile ignorieren kleine Modelle den „level"-Wert komplett.
+const LEVEL_RULES = {
+  de: {
+    grundlegend:
+      "Niveau GRUNDLEGEND: Reproduktion & Grundwissen. Begriffe definieren, Jahreszahlen, Personen, Fakten direkt aus dem Material abfragen. Kurze, eindeutige Antworten.",
+    mittel:
+      "Niveau MITTEL: Anwendung & Transfer. Zusammenhänge erklären, Beispiele einordnen, zwei Aspekte vergleichen, Ursachen und Folgen benennen. Antworten mit 1-2 Fachbegriffen.",
+    anspruchsvoll:
+      "Niveau ANSPRUCHSVOLL: Analyse, Reflexion und Bewertung. Thesen begründen, Positionen kritisch einordnen, fachliche Entscheidungen abwägen, Methoden oder Modelle anwenden. Antworten enthalten Begründungen und Fachtermini."
+  },
+  en: {
+    grundlegend:
+      "Level BASIC: recall and foundational knowledge. Define terms, identify dates, persons, facts straight from the material. Short, unambiguous answers.",
+    mittel:
+      "Level INTERMEDIATE: application and transfer. Explain relationships, place examples, compare two aspects, name causes and effects. Answers include 1-2 technical terms.",
+    anspruchsvoll:
+      "Level ADVANCED: analysis, reflection and evaluation. Justify theses, position arguments critically, weigh methodological decisions, apply models. Answers include justification and technical vocabulary."
+  },
+  es: {
+    grundlegend:
+      "Nivel BÁSICO: reproducción y conocimientos fundamentales. Definir términos, fechas, personas y hechos directamente del material. Respuestas breves e inequívocas.",
+    mittel:
+      "Nivel INTERMEDIO: aplicación y transferencia. Explicar relaciones, situar ejemplos, comparar dos aspectos, nombrar causas y consecuencias. Respuestas con 1-2 términos técnicos.",
+    anspruchsvoll:
+      "Nivel AVANZADO: análisis, reflexión y evaluación. Justificar tesis, posicionar argumentos de forma crítica, ponderar decisiones metodológicas, aplicar modelos. Respuestas con justificación y terminología técnica."
+  }
+};
+
+// Mindest-Qualitätsanforderung an jede Übung: Rohfakten statt Floskeln.
+const QUALITY_RULES = {
+  de: "- Jede Antwort enthält mindestens EINEN konkreten Fachinhalt: einen Fachbegriff, einen Namen, eine Jahreszahl, einen Mechanismus, eine Formel oder eine konkrete Zahl. KEINE Floskeln wie 'ist ein zentraler Aspekt' oder 'spielt eine wichtige Rolle'.",
+  en: "- Every answer MUST contain at least one concrete fact: a technical term, a name, a year, a mechanism, a formula or a specific number. NO filler like \"is a central aspect\" or \"plays an important role\".",
+  es: "- Cada respuesta DEBE contener al menos un hecho concreto: un término técnico, un nombre, una fecha, un mecanismo, una fórmula o un número específico. SIN muletillas como \"es un aspecto central\" o \"desempeña un papel importante\"."
+};
+
+// Format-spezifische Zusatzregeln (Lücken-Anzahl, Mehrfach-Fragen …).
+const FORMAT_EXTRA_RULES = {
+  flashcards: {
+    de: "- Fragen sind spezifisch (W-Fragen oder gezielte Entscheidungsfragen), nicht generisch. Antworten sind maximal 2 Sätze, aber inhaltlich reichhaltig.",
+    en: "- Questions are specific (wh-questions or targeted decision questions), never generic. Answers are at most 2 sentences but rich in content.",
+    es: "- Las preguntas son específicas (interrogativas o preguntas de decisión concretas), nunca genéricas. Las respuestas tienen como máximo 2 oraciones pero son ricas en contenido."
+  },
+  multipleChoice: {
+    de: "- Alle vier Antwortmöglichkeiten sind FACHLICH plausibel – auch die falschen Alternativen stammen aus dem gleichen Themenfeld und wirken auf den ersten Blick möglich. Keine offensichtlich sinnlosen Distraktoren.\n- Die Erklärung begründet, warum die richtige Antwort stimmt UND warum die wichtigste falsche Alternative nicht stimmt.",
+    en: "- All four options are technically PLAUSIBLE – even the wrong ones belong to the same subject domain and look possible at first glance. No obviously nonsensical distractors.\n- The explanation argues why the correct option is right AND why the strongest wrong alternative is incorrect.",
+    es: "- Las cuatro opciones son TÉCNICAMENTE plausibles – incluso las incorrectas pertenecen al mismo campo temático y parecen posibles a primera vista. Sin distractores evidentemente absurdos.\n- La explicación argumenta por qué la opción correcta es correcta Y por qué la alternativa incorrecta más fuerte no lo es."
+  },
+  cloze: {
+    de: "- Jeder Satz enthält GENAU 3 bis 5 Lücken {{LUECKE}}. Die Lücken müssen echte Fachbegriffe, Zahlen, Namen oder Mechanismen sein, keine Allerwelts-Wörter wie 'ist' oder 'wird'.\n- Die Reihenfolge der Lösungen entspricht der Reihenfolge der Lücken im Satz.",
+    en: "- Every sentence contains EXACTLY 3 to 5 blanks {{LUECKE}}. Blanks must be real technical terms, numbers, names or mechanisms – never generic words like 'is' or 'has'.\n- The order of the solutions matches the order of the blanks in the sentence.",
+    es: "- Cada oración contiene EXACTAMENTE 3 a 5 huecos {{LUECKE}}. Los huecos deben ser términos técnicos reales, números, nombres o mecanismos – nunca palabras genéricas como 'es' o 'tiene'.\n- El orden de las soluciones coincide con el orden de los huecos en la oración."
+  }
+};
+
 const KNOWLEDGE_RULES = {
   de: {
     withMaterials:
@@ -791,6 +846,11 @@ function buildBatchPrompt({
   const mcLine = format === "multipleChoice"
     ? "\n" + MC_RULES[lang]
     : "";
+
+  const levelKey = LEVEL_RULES[lang][level] ? level : "grundlegend";
+  const levelRule = "- " + LEVEL_RULES[lang][levelKey];
+  const qualityRule = QUALITY_RULES[lang];
+  const formatExtraRule = FORMAT_EXTRA_RULES[format][lang];
 
   // Format-spezifische Pflichtzeilen. Für kleine Modelle entscheidend:
   // „jede Übung besteht aus genau folgenden Zeilen" lässt sie
@@ -876,6 +936,9 @@ ${singleTemplate}
 ${exampleBlock}
 ${h.rules}:
 ${knowledge}
+${levelRule}
+${qualityRule}
+${formatExtraRule}
 - ${formatSpecificRule}
 - ${h.ruleLevel}
 - ${h.ruleFormat}
@@ -1120,7 +1183,10 @@ async function generateBatch({
   });
 
   // Hinweis für local-model.js, den Token-Budget passend hochzudrehen.
+  // Format geht mit ein, weil MC & Cloze pro Übung deutlich mehr Tokens
+  // brauchen als eine Karteikarte (vier Optionen + Erklärung vs. zwei Zeilen).
   request.metadata.quizCount = count;
+  request.metadata.quizFormat = format;
 
   const response = await atelierAI.ask(request);
 
@@ -1236,14 +1302,20 @@ export class LearningStudio {
       }
     }
 
-    // Harte Obergrenze 4 für iPad-Verträglichkeit. Mehr als 4 Übungen
-    // in einem Batch sprengen zuverlässig den Metal-Speicher kleiner
-    // Geräte, weil Output-Länge direkt gegen den KV-Cache zählt. Der
-    // Nutzer kann bei Bedarf einfach ein zweites Mal "Erzeugen" drücken,
-    // dann sind die ersten Karten schon da und das Modell startet frisch.
+    // Format-abhängige Obergrenze für iPad-Verträglichkeit. Jede MC-Übung
+    // kostet deutlich mehr Output-Tokens als eine Karteikarte, deshalb
+    // niedrigere Grenze bei MC und Cloze. Flashcards vertragen 6, MC/Cloze
+    // nur 5 pro Batch – darüber killt der KV-Cache den WebGPU-Adapter.
+    const perFormatCap = {
+      flashcards: 6,
+      multipleChoice: 5,
+      cloze: 5
+    }[format] || 5;
+
+    const requestedCount = Number(count) || 5;
     const amount = Math.max(
       2,
-      Math.min(4, Number(count) || 3)
+      Math.min(perFormatCap, requestedCount)
     );
 
     let localMaterials = [];
