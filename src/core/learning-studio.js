@@ -9,8 +9,8 @@
  * - Mehrsprachige Erzeugung je nach Fach (DE/EN/ES)
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103ze";
-import { knowledgeBase } from "./knowledge.js?v=20261103ze";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zf";
+import { knowledgeBase } from "./knowledge.js?v=20261103zf";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -78,21 +78,85 @@ Answer: <concise academic answer, at most 1-2 sentences>`,
 Respuesta: <respuesta académica breve, máximo 1-2 oraciones>`
     },
     parse(text) {
-      const clean = stripMarkdown(text);
-      const q = clean.match(new RegExp(`${KEYS.question}\\s*[:\\-]?\\s*(.+)`, "i"))?.[1]?.trim();
-      const aMatch =
-        clean.match(new RegExp(`${KEYS.answer}\\s*[:\\-]?\\s*([\\s\\S]+?)(?=\\n\\s*(?:${KEYS.question}|$))`, "i"))
-        || clean.match(new RegExp(`${KEYS.answer}\\s*[:\\-]?\\s*([\\s\\S]+)$`, "i"));
-      const a = aMatch?.[1]?.trim();
+      let clean = stripMarkdown(text);
 
-      if (!q || !a) {
+      // Übung-/Karte-Header am Anfang entfernen, damit nur noch das
+      // reine Frage/Antwort-Paar übrig bleibt.
+      clean = clean.replace(
+        /^\s*(?:Übung|Ubung|Uebung|Exercise|Ejercicio|Flashcard|Karteikarte|Karte|Tarjeta|Card|Aufgabe)\s*\d*\s*[:\-).]?\s*/i,
+        ""
+      ).trim();
+
+      // Reine Nummerierung am Zeilenanfang wegwerfen: „1.", „1)", „(1)".
+      clean = clean.replace(/^\s*\(?\d+\)?\s*[:.)\-]\s*/, "").trim();
+
+      // 1. Standardformat: „Frage: … Antwort: …"
+      const qPattern = new RegExp(
+        `${KEYS.question}\\s*\\d*\\s*[:\\-]\\s*([\\s\\S]+?)(?=\\n\\s*(?:${KEYS.answer}|${KEYS.question})|$)`,
+        "i"
+      );
+      const aPattern = new RegExp(
+        `${KEYS.answer}\\s*\\d*\\s*[:\\-]\\s*([\\s\\S]+?)(?=\\n\\s*(?:${KEYS.question}|${KEYS.answer})|$)`,
+        "i"
+      );
+
+      let question = clean.match(qPattern)?.[1]?.trim() || null;
+      let answer = clean.match(aPattern)?.[1]?.trim() || null;
+
+      // 2. Nur „Antwort:" vorhanden, Frage steht unmarkiert davor.
+      if (!question && answer) {
+        const answerStart = clean.search(
+          new RegExp(`${KEYS.answer}\\s*\\d*\\s*[:\\-]`, "i")
+        );
+        if (answerStart > 0) {
+          question = clean.slice(0, answerStart).trim();
+        }
+      }
+
+      // 3. Kurzform „Q: … A: …" oder „F: … A: …".
+      if (!question) {
+        question = clean.match(/(?:^|\n)\s*(?:Q|F|P)\s*\d*\s*[:\-]\s*([^\n]+)/i)?.[1]?.trim() || null;
+      }
+      if (!answer) {
+        answer = clean.match(/(?:^|\n)\s*(?:A|R)\s*\d*\s*[:\-]\s*([\s\S]+?)(?=\n\s*(?:Q|F|P|A|R)\s*\d*\s*[:\-]|$)/i)?.[1]?.trim() || null;
+      }
+
+      // 4. Letzter Ausweg: erste nichtleere Zeile = Frage, Rest = Antwort.
+      if (!question || !answer) {
+        const lines = clean.split(/\n+/).map(l => l.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+          if (!question) {
+            question = lines[0].replace(
+              /^(?:Frage|Question|Pregunta|Q|F|P)\s*\d*\s*[:\-]\s*/i,
+              ""
+            ).trim();
+          }
+          if (!answer) {
+            answer = lines.slice(1).join(" ").replace(
+              /^(?:Antwort|Answer|Respuesta|A|R)\s*\d*\s*[:\-]\s*/i,
+              ""
+            ).trim();
+          }
+        }
+      }
+
+      // Falls die Frage auf einer Zeile mit der Antwort stand
+      // („Frage: X? Antwort: Y."), die Antwort aus der Frage schneiden.
+      if (question) {
+        question = question.replace(
+          new RegExp(`\\s*${KEYS.answer}\\s*\\d*\\s*[:\\-][\\s\\S]*$`, "i"),
+          ""
+        ).trim();
+      }
+
+      if (!question || !answer) {
         throw new Error("Antwort folgt nicht dem Format 'Frage/Question/Pregunta: … / Antwort/Answer/Respuesta: …'.");
       }
-      if (q.length < 5 || a.length < 5) {
+      if (question.length < 5 || answer.length < 5) {
         throw new Error("Frage oder Antwort ist zu kurz.");
       }
 
-      return [{ question: q, answer: a }];
+      return [{ question, answer }];
     }
   },
 
@@ -673,52 +737,74 @@ ${h.startCue}`;
 }
 
 /**
- * Teilt eine Batch-Antwort anhand des Primär-Schlüssels (Frage / Question /
- * Pregunta bzw. Satz / Sentence / Oración) in einzelne Übungsblöcke.
- * Zusätzlich erkennt die Funktion „Übung N"-/„Exercise N"-/
- * „Ejercicio N"-Separatoren.
+ * Teilt eine Batch-Antwort in einzelne Übungsblöcke.
+ *
+ * Mehrstufige Fallback-Strategie, damit auch untypisch formatierte
+ * Modell-Antworten noch zerlegt werden können:
+ *   1. Explizite Separatoren: „Übung N", „Exercise N", „Ejercicio N",
+ *      „Karteikarte N", „Flashcard N", „Tarjeta N", „Karte N", „Card N"
+ *   2. Nummerierte Zeilen am Zeilenanfang: „1.", „1)", „(1)"
+ *   3. Primär-Schlüssel am Zeilenanfang: „Frage:", „Question:", …
+ *   4. Primär-Schlüssel irgendwo im Text (auch nach Nummern o. Markdown)
  */
 function splitIntoBlocks(text, primaryKey) {
   const clean = stripMarkdown(text);
 
-  // Zuerst versuchen, an expliziten "Übung N" / "Ejercicio N"-Trennern
-  // zu splitten – das ist am robustesten.
-  const sectionRe = /^\s*(?:Übung|Ubung|Uebung|Exercise|Ejercicio|Flashcard|Karte|Tarjeta|MC|Multiple\s*Choice)\s*\d+\s*[:\-]?.*$/gim;
+  const sliceByIndices = (indices) =>
+    indices
+      .map((start, i) => {
+        const end = i + 1 < indices.length ? indices[i + 1] : clean.length;
+        return clean.slice(start, end).trim();
+      })
+      .filter(section => section.length > 10);
 
-  let sections;
-  if (sectionRe.test(clean)) {
-    sectionRe.lastIndex = 0;
+  const collectIndices = (regex) => {
+    regex.lastIndex = 0;
     const indices = [];
     let m;
-    while ((m = sectionRe.exec(clean)) !== null) {
+    while ((m = regex.exec(clean)) !== null) {
       indices.push(m.index);
+      if (m.index === regex.lastIndex) regex.lastIndex += 1;
     }
-    sections = indices.map((start, i) => {
-      const end = i + 1 < indices.length ? indices[i + 1] : clean.length;
-      return clean.slice(start, end).trim();
-    });
-  } else {
-    // Fallback: an jedem Vorkommen des Primär-Schlüssels splitten.
-    // Erfasst auch "Frage 1:", "Frage:" usw.
-    const primRe = new RegExp(
-      `^\\s*${primaryKey}\\s*\\d*\\s*[:\\-]`,
-      "gim"
-    );
-    const indices = [];
-    let m;
-    while ((m = primRe.exec(clean)) !== null) {
-      indices.push(m.index);
-    }
-    if (indices.length === 0) {
-      return [clean];
-    }
-    sections = indices.map((start, i) => {
-      const end = i + 1 < indices.length ? indices[i + 1] : clean.length;
-      return clean.slice(start, end).trim();
-    });
+    return indices;
+  };
+
+  // Stufe 1: explizite Übungs-/Karten-/Aufgaben-Marker
+  const sectionRe = /^\s*(?:Übung|Ubung|Uebung|Exercise|Ejercicio|Flashcard|Karteikarte|Karte|Tarjeta|Card|MC|Aufgabe|Pregunta\s+n[uú]mero|Multiple\s*Choice)\s*\d+\s*[:\-).]?.*$/gim;
+  let indices = collectIndices(sectionRe);
+  if (indices.length >= 2) return sliceByIndices(indices);
+
+  // Stufe 2: nummerierte Zeilen – „1. Frage: …", „1) …", „(1) …"
+  const numberedRe = /^\s*(?:\(\s*\d+\s*\)|\d+\s*[.)])\s+(?=\S)/gim;
+  indices = collectIndices(numberedRe);
+  if (indices.length >= 2) return sliceByIndices(indices);
+
+  // Stufe 3: Primär-Schlüssel am Zeilenanfang
+  const primLineRe = new RegExp(
+    `^\\s*${primaryKey}\\s*\\d*\\s*[:\\-]`,
+    "gim"
+  );
+  indices = collectIndices(primLineRe);
+  if (indices.length >= 2) return sliceByIndices(indices);
+
+  // Stufe 4: Primär-Schlüssel irgendwo (notfalls auch nach Nummern)
+  const primAnyRe = new RegExp(
+    `(?:^|\\n)\\s*(?:\\(?\\d+\\)?[.)]\\s*)?${primaryKey}\\s*\\d*\\s*[:\\-]`,
+    "gi"
+  );
+  indices = [];
+  let m;
+  primAnyRe.lastIndex = 0;
+  while ((m = primAnyRe.exec(clean)) !== null) {
+    // Index auf Beginn des Primär-Schlüssels (nicht den Zeilenumbruch) setzen
+    const subMatch = m[0].search(new RegExp(primaryKey, "i"));
+    indices.push(m.index + Math.max(0, subMatch));
+    if (m.index === primAnyRe.lastIndex) primAnyRe.lastIndex += 1;
   }
+  if (indices.length >= 2) return sliceByIndices(indices);
 
-  return sections.filter(section => section.length > 0);
+  // Letzter Ausweg: eine einzige Übung in der Antwort – komplett zurückgeben
+  return clean.length > 10 ? [clean] : [];
 }
 
 async function generateBatch({
