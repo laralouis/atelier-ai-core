@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zn";
-import { knowledgeBase } from "./knowledge.js?v=20261103zn";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zo";
+import { knowledgeBase } from "./knowledge.js?v=20261103zo";
 
-const BUILD = "20261103zn";
+const BUILD = "20261103zo";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -767,9 +767,18 @@ const LEVEL_RULES = {
 
 // Mindest-Qualitätsanforderung an jede Übung: Rohfakten statt Floskeln.
 const QUALITY_RULES = {
-  de: "- Jede Antwort enthält mindestens EINEN konkreten Fachinhalt: einen Fachbegriff, einen Namen, eine Jahreszahl, einen Mechanismus, eine Formel oder eine konkrete Zahl. KEINE Floskeln wie 'ist ein zentraler Aspekt' oder 'spielt eine wichtige Rolle'.",
-  en: "- Every answer MUST contain at least one concrete fact: a technical term, a name, a year, a mechanism, a formula or a specific number. NO filler like \"is a central aspect\" or \"plays an important role\".",
-  es: "- Cada respuesta DEBE contener al menos un hecho concreto: un término técnico, un nombre, una fecha, un mecanismo, una fórmula o un número específico. SIN muletillas como \"es un aspecto central\" o \"desempeña un papel importante\"."
+  de:
+    "- Jede Antwort enthält MINDESTENS ZWEI konkrete Fachinhalte: zwei Fachbegriffe ODER einen Fachbegriff + eine Zahl/Jahreszahl/Formel ODER einen Mechanismus mit genannter Ursache und Wirkung.\n" +
+    "- VERBOTEN sind inhaltsleere Formulierungen: 'ist ein zentraler Aspekt', 'spielt eine wichtige Rolle', 'ist von Bedeutung', 'ermöglicht verschiedene Dinge', 'behandelt verschiedene Themen'.\n" +
+    "- Jede Antwort erklärt WIE oder WARUM, nicht nur DASS. Also nicht 'die Photosynthese ist wichtig', sondern 'die Photosynthese wandelt in den Chloroplasten CO2 und H2O lichtgetrieben in Glucose um'.",
+  en:
+    "- Every answer MUST contain AT LEAST TWO concrete facts: two technical terms OR one technical term + a number/year/formula OR a mechanism with named cause and effect.\n" +
+    "- FORBIDDEN empty filler: 'is a central aspect', 'plays an important role', 'is of importance', 'enables various things', 'covers various topics'.\n" +
+    "- Every answer explains HOW or WHY, not just THAT. Not 'photosynthesis is important', but 'photosynthesis converts CO2 and H2O into glucose in the chloroplasts, driven by light'.",
+  es:
+    "- Cada respuesta DEBE contener AL MENOS DOS hechos concretos: dos términos técnicos O un término técnico + número/fecha/fórmula O un mecanismo con causa y efecto nombrados.\n" +
+    "- PROHIBIDO relleno vacío: 'es un aspecto central', 'desempeña un papel importante', 'es de importancia', 'permite varias cosas', 'trata varios temas'.\n" +
+    "- Cada respuesta explica CÓMO o POR QUÉ, no solo QUE. No 'la fotosíntesis es importante', sino 'la fotosíntesis convierte CO2 y H2O en glucosa en los cloroplastos, impulsada por la luz'."
 };
 
 // Format-spezifische Zusatzregeln (Lücken-Anzahl, Mehrfach-Fragen …).
@@ -1221,9 +1230,25 @@ function buildBatchPrompt({
     ? `\n${h.exampleLabel}\n${example}\n\n${h.exampleAfter}\n`
     : "";
 
+  // Explizite Aufzählung aller N Übungen – kleine Modelle reagieren
+  // deutlich besser auf eine ausgeschriebene Liste als auf eine Zahl.
+  const headerKeyword = {
+    de: "Übung",
+    en: "Exercise",
+    es: "Ejercicio"
+  }[lang];
+  const enumeration = Array.from({ length: count }, (_, i) => `${headerKeyword} ${i + 1}`).join(", ");
+  const countEcho = {
+    de: `Deine Antwort enthält GENAU ${count} Übungen: ${enumeration}. Nicht mehr, nicht weniger. Erst nach der letzten Übung hörst du auf.`,
+    en: `Your reply contains EXACTLY ${count} exercises: ${enumeration}. No more, no fewer. Only stop after the final exercise.`,
+    es: `Tu respuesta contiene EXACTAMENTE ${count} ejercicios: ${enumeration}. Ni más, ni menos. Solo detente tras el último ejercicio.`
+  }[lang];
+
   return `${h.topic}: "${topic}" (${h.subject}: ${subject})
 
 ${h.task}: Erstelle genau ${count} ${h.count}. ${instruction}
+
+${countEcho}
 
 ${h.format}
 
@@ -1796,11 +1821,67 @@ export class LearningStudio {
       }
     }
 
-    // Hinweis: Keine automatische Nachlieferung mehr. Jede zusätzliche
-    // Inferenzrunde kostet KV-Cache-Speicher und hat auf dem iPad
-    // regelmäßig den WebGPU-Adapter gekillt. Lieber liefern wir, was
-    // da ist – der Nutzer kann für mehr Karten einfach erneut auf
-    // "Erzeugen" tippen; dann startet das Modell mit frischem Zustand.
+    // Flashcard-spezifische Einmal-Nachlieferung: wenn weniger Karten
+    // als angefragt da sind, höchstens EINEN weiteren Lauf. Mehr nicht –
+    // die alte Zwei-Runden-Schleife hat auf dem iPad den WebGPU-Adapter
+    // zerlegt. MC/Cloze bekommen keine Nachlieferung, weil jede ihrer
+    // Übungen ~2× so viele Tokens kostet und die Pipeline schneller OOMt.
+    if (
+      format === "flashcards" &&
+      items.length > 0 &&
+      items.length < amount &&
+      !modelUnrecoverable &&
+      atelierAI.getStatus().localModel.ready
+    ) {
+      const missing = amount - items.length;
+
+      if (typeof onProgress === "function") {
+        onProgress({
+          completed: items.length,
+          attempted: amount,
+          total: amount,
+          percentage: 80,
+          note: `Es fehlen noch ${missing} Karte${missing === 1 ? "" : "n"} – Nachlieferung …`
+        });
+      }
+
+      try {
+        // Weicher Reset zwischen den Durchläufen, damit der KV-Cache
+        // nicht beide Prompts gleichzeitig im Speicher hält.
+        await atelierAI.softResetChat();
+
+        const result = await generateBatch({
+          format,
+          subject,
+          topic,
+          level,
+          materialContext,
+          count: missing,
+          language
+        });
+
+        const existingQuestions = new Set(
+          items.map(entry => normalizeForCompare(entry.question || ""))
+        );
+        for (const entry of result.items) {
+          const key = normalizeForCompare(entry.question || "");
+          if (!existingQuestions.has(key)) {
+            items.push(entry);
+            existingQuestions.add(key);
+          }
+          if (items.length >= amount) break;
+        }
+      } catch (topUpError) {
+        failures.push({
+          index: failures.length + 1,
+          message: "Nachlieferung fehlgeschlagen: " + (topUpError?.message || String(topUpError))
+        });
+        if (gpuDeathPattern.test(String(topUpError?.message || ""))) {
+          modelUnrecoverable = true;
+        }
+        console.warn("ATELIER AI: Flashcard-Nachlieferung fehlgeschlagen:", topUpError);
+      }
+    }
 
     if (typeof onProgress === "function") {
       onProgress({
