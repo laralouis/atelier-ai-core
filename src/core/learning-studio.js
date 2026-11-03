@@ -9,8 +9,8 @@
  * - Mehrsprachige Erzeugung je nach Fach (DE/EN/ES)
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zb";
-import { knowledgeBase } from "./knowledge.js?v=20261103zb";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zc";
+import { knowledgeBase } from "./knowledge.js?v=20261103zc";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;

@@ -599,7 +599,7 @@ async function safeImport(name,path){
   }
 }
 
-const ATELIER_VERSION = "20261103zb";
+const ATELIER_VERSION = "20261103zc";
 
 const [aiModule,learningModule,importerModule,knowledgeModule]=await Promise.all([
   safeImport("KI-Modul",`./src/core/ai.js?v=${ATELIER_VERSION}`),

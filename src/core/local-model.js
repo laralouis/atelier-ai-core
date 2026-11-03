@@ -569,18 +569,20 @@ export class LocalModel {
         // Hinweis: response_format: { type: "json_object" } ist in
         // WebLLM 0.2.87 fehlerhaft ("Failed to initialize grammar matcher").
         // Wir setzen daher ausschließlich auf prompt-basierte JSON-Ausgabe.
-        // Bei Batch-Quiz skalieren wir die max_tokens mit der Anzahl
-        // der angeforderten Übungen. Pro Übung grob 160 Tokens Reserve;
-        // obere Grenze 1500, damit der Streaming-Puffer handhabbar bleibt.
+        //
+        // max_tokens KONSERVATIV halten: iPad-Metal OOM-t ab etwa 800
+        // Tokens Streaming-Länge. Lieber kürzer antworten (und ggf.
+        // weniger Übungen liefern) als die GPU zu zerstören. Der Parser
+        // nimmt entgegen, was er bekommt.
         const quizCount = Number(request.metadata?.quizCount) || 1;
         const quizTokens = Math.min(
-          1500,
-          200 + quizCount * 180
+          700,
+          180 + quizCount * 100
         );
 
         const stream = await engine.chat.completions.create({
           messages,
-          temperature: isQuiz ? 0.3 : 0.1,
+          temperature: isQuiz ? 0.2 : 0.1,
           max_tokens: isQuiz
             ? Math.max(MAX_OUTPUT_TOKENS_QUIZ, quizTokens)
             : MAX_OUTPUT_TOKENS,
@@ -589,23 +591,66 @@ export class LocalModel {
 
         let answer = "";
         let usage = null;
+        let streamError = null;
 
-        for await (const chunk of stream) {
-          if (this.engine !== engine || !this.ready) {
-            throw new Error(
-              "Das KI-Modell wurde während der Anfrage verändert."
-            );
+        // Streaming-Fehler nicht sofort als Totalausfall werten:
+        // Wenn das Modell schon einen Teil generiert hat, versuchen wir
+        // damit zu arbeiten. Der Parser kann meist 2-3 vollständige
+        // Übungen aus einer unterbrochenen Antwort herausziehen.
+        try {
+          for await (const chunk of stream) {
+            if (this.engine !== engine || !this.ready) {
+              throw new Error(
+                "Das KI-Modell wurde während der Anfrage verändert."
+              );
+            }
+
+            const delta = chunk.choices?.[0]?.delta?.content;
+            if (delta) answer += delta;
+
+            if (chunk.usage) usage = chunk.usage;
           }
-
-          const delta = chunk.choices?.[0]?.delta?.content;
-          if (delta) answer += delta;
-
-          if (chunk.usage) usage = chunk.usage;
+        } catch (midStreamError) {
+          streamError = midStreamError;
+          console.warn(
+            "ATELIER AI: Stream unterbrochen – prüfe, ob Teilantwort nutzbar ist.",
+            midStreamError
+          );
         }
 
-        if (!answer.trim()) {
-          throw new Error(
-            "Das Modell hat keine Antwort erzeugt."
+        const trimmedAnswer = answer.trim();
+        const partial = Boolean(streamError);
+
+        // Nur wenn gar nichts Brauchbares zurückkam, geben wir auf.
+        // 60 Zeichen entspricht etwa einer halben Übung – darunter kann
+        // der Parser realistisch nichts mehr sinnvolles herausziehen.
+        if (!trimmedAnswer || trimmedAnswer.length < 60) {
+          if (streamError) {
+            if (/already been disposed/i.test(String(streamError?.message || ""))) {
+              this.engine = null;
+              this.ready = false;
+              this.status = "error";
+            }
+            this.error = getFriendlyError(streamError);
+            throw new Error(this.error);
+          }
+          throw new Error("Das Modell hat keine Antwort erzeugt.");
+        }
+
+        // Teilantwort vorhanden: Engine ggf. für Folge-Calls als tot
+        // markieren, aber den bisher generierten Text als Erfolg
+        // zurückgeben – der Parser rettet daraus die vollständigen
+        // Übungen.
+        if (partial) {
+          if (/already been disposed/i.test(String(streamError?.message || ""))) {
+            this.engine = null;
+            this.ready = false;
+            this.status = "error";
+            this.error = getFriendlyError(streamError);
+          }
+          console.warn(
+            "ATELIER AI: Nutze Teilantwort (" + trimmedAnswer.length + " Zeichen) " +
+            "trotz Streaming-Fehler."
           );
         }
 
@@ -615,8 +660,9 @@ export class LocalModel {
           status: "success",
           provider: "WebLLM",
           model: modelId,
-          answer: answer.trim(),
-          usage
+          answer: trimmedAnswer,
+          usage,
+          partial
         };
 
       } catch (error) {
