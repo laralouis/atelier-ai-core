@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zk";
-import { knowledgeBase } from "./knowledge.js?v=20261103zk";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zl";
+import { knowledgeBase } from "./knowledge.js?v=20261103zl";
 
-const BUILD = "20261103zk";
+const BUILD = "20261103zl";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -72,14 +72,43 @@ const FORMATS = {
     },
     template: {
       de:
-`Frage: <deine konkrete Frage zum Thema>
+`Übung <nr>:
+Frage: <eine konkrete Frage, die mit einem Fragezeichen endet>
 Antwort: <knappe fachliche Antwort, maximal 1-2 Sätze>`,
       en:
-`Question: <your specific question about the topic>
+`Exercise <nr>:
+Question: <a specific question that ends with a question mark>
 Answer: <concise academic answer, at most 1-2 sentences>`,
       es:
-`Pregunta: <tu pregunta concreta sobre el tema>
+`Ejercicio <nr>:
+Pregunta: <una pregunta concreta que termine con signo de interrogación>
 Respuesta: <respuesta académica breve, máximo 1-2 oraciones>`
+    },
+    example: {
+      de:
+`Übung 1:
+Frage: Welche Rolle spielt der Choral im Gregorianischen Repertoire?
+Antwort: Der Choral bildet die liturgische Grundform des Gregorianischen Repertoires und ist einstimmig, unbegleitet und modal.
+
+Übung 2:
+Frage: Wodurch unterscheidet sich der Gregorianische Choral vom späteren mehrstimmigen Gesang?
+Antwort: Er ist monodisch, ohne harmonische Begleitung, und folgt den Kirchentonarten statt Dur/Moll.`,
+      en:
+`Exercise 1:
+Question: What role does Gregorian chant play in medieval liturgy?
+Answer: It serves as the monophonic, unaccompanied liturgical music of the Western Church, sung in the eight church modes.
+
+Exercise 2:
+Question: How does Gregorian chant differ from later polyphonic music?
+Answer: It is monophonic and modal, whereas polyphonic music adds multiple independent voices and uses major/minor tonality.`,
+      es:
+`Ejercicio 1:
+Pregunta: ¿Qué función cumple el canto gregoriano en la liturgia medieval?
+Respuesta: Es la música litúrgica monódica y sin acompañamiento de la Iglesia occidental, cantada en los ocho modos eclesiásticos.
+
+Ejercicio 2:
+Pregunta: ¿En qué se diferencia el canto gregoriano de la polifonía posterior?
+Respuesta: Es monódico y modal, mientras que la polifonía añade varias voces independientes y usa tonalidad mayor/menor.`
     },
     parse(text) {
       // Separator-Klasse inkl. Unicode-Bindestriche (– —) und →.
@@ -196,7 +225,8 @@ Respuesta: <respuesta académica breve, máximo 1-2 oraciones>`
     },
     template: {
       de:
-`Frage: <deine Frage>
+`Übung <nr>:
+Frage: <deine Frage>
 A: <Antwort A>
 B: <Antwort B>
 C: <Antwort C>
@@ -204,7 +234,8 @@ D: <Antwort D>
 Richtig: <A, B, C oder D>
 Erklärung: <kurze fachliche Begründung>`,
       en:
-`Question: <your question>
+`Exercise <nr>:
+Question: <your question>
 A: <answer A>
 B: <answer B>
 C: <answer C>
@@ -212,13 +243,43 @@ D: <answer D>
 Correct: <A, B, C or D>
 Explanation: <short academic justification>`,
       es:
-`Pregunta: <tu pregunta>
+`Ejercicio <nr>:
+Pregunta: <tu pregunta>
 A: <respuesta A>
 B: <respuesta B>
 C: <respuesta C>
 D: <respuesta D>
 Correcta: <A, B, C o D>
 Explicación: <breve justificación académica>`
+    },
+    example: {
+      de:
+`Übung 1:
+Frage: Welche Tonarten verwendet der Gregorianische Choral?
+A: Dur und Moll
+B: Die acht Kirchentonarten
+C: Pentatonik
+D: Ganztonleiter
+Richtig: B
+Erklärung: Der Gregorianische Choral folgt den acht Kirchentonarten (Modi), nicht dem Dur-Moll-System.`,
+      en:
+`Exercise 1:
+Question: Which tonal system does Gregorian chant use?
+A: Major and minor keys
+B: The eight church modes
+C: Pentatonic scales
+D: Whole-tone scales
+Correct: B
+Explanation: Gregorian chant follows the eight church modes, not the later major/minor system.`,
+      es:
+`Ejercicio 1:
+Pregunta: ¿Qué sistema tonal utiliza el canto gregoriano?
+A: Tonalidad mayor y menor
+B: Los ocho modos eclesiásticos
+C: Escalas pentatónicas
+D: Escalas de tonos enteros
+Correcta: B
+Explicación: El canto gregoriano sigue los ocho modos eclesiásticos, no el sistema mayor/menor posterior.`
     },
     parse(text) {
       const clean = stripMarkdown(text);
@@ -300,17 +361,37 @@ Explicación: <breve justificación académica>`
     },
     template: {
       de:
-`Satz: <satz mit {{LUECKE}} für jede Lücke>
+`Übung <nr>:
+Satz: <satz mit {{LUECKE}} für jede Lücke>
 Lösungen: <lösung 1>; <lösung 2>; ...
 Erklärung: <kurze fachliche Erklärung>`,
       en:
-`Sentence: <sentence with {{LUECKE}} for each blank>
+`Exercise <nr>:
+Sentence: <sentence with {{LUECKE}} for each blank>
 Solutions: <solution 1>; <solution 2>; ...
 Explanation: <short academic explanation>`,
       es:
-`Oración: <oración con {{LUECKE}} para cada hueco>
+`Ejercicio <nr>:
+Oración: <oración con {{LUECKE}} para cada hueco>
 Soluciones: <solución 1>; <solución 2>; ...
 Explicación: <breve explicación académica>`
+    },
+    example: {
+      de:
+`Übung 1:
+Satz: Der Gregorianische Choral ist {{LUECKE}} und folgt den {{LUECKE}}.
+Lösungen: einstimmig; Kirchentonarten
+Erklärung: Der Gregorianische Choral ist eine einstimmige liturgische Gesangsform, die in den acht Kirchentonarten (Modi) notiert ist.`,
+      en:
+`Exercise 1:
+Sentence: Gregorian chant is {{LUECKE}} and follows the {{LUECKE}}.
+Solutions: monophonic; church modes
+Explanation: Gregorian chant is a monophonic liturgical form of singing based on the eight church modes.`,
+      es:
+`Ejercicio 1:
+Oración: El canto gregoriano es {{LUECKE}} y sigue los {{LUECKE}}.
+Soluciones: monódico; modos eclesiásticos
+Explicación: El canto gregoriano es una forma de canto litúrgico monódico basada en los ocho modos eclesiásticos.`
     },
     parse(text) {
       let clean = stripMarkdown(text);
@@ -705,10 +786,32 @@ function buildBatchPrompt({
 
   const formatConfig = FORMATS[format];
   const singleTemplate = formatConfig.template[lang];
+  const example = formatConfig.example?.[lang] || "";
 
   const mcLine = format === "multipleChoice"
     ? "\n" + MC_RULES[lang]
     : "";
+
+  // Format-spezifische Pflichtzeilen. Für kleine Modelle entscheidend:
+  // „jede Übung besteht aus genau folgenden Zeilen" lässt sie
+  // zuverlässiger das Template befolgen.
+  const formatSpecificRule = {
+    flashcards: {
+      de: "Jede Übung besteht aus GENAU drei Zeilen: eine Zeile 'Übung N:', eine Zeile 'Frage: ...' (muss mit ? enden), eine Zeile 'Antwort: ...'. KEIN Fließtext, KEINE Prosa ohne diese Labels.",
+      en: "Each exercise has EXACTLY three lines: one 'Exercise N:' line, one 'Question: ...' line (must end with '?'), one 'Answer: ...' line. NO running prose without these labels.",
+      es: "Cada ejercicio tiene EXACTAMENTE tres líneas: una línea 'Ejercicio N:', una línea 'Pregunta: ...' (debe terminar con '?'), una línea 'Respuesta: ...'. SIN texto corrido sin estas etiquetas."
+    },
+    multipleChoice: {
+      de: "Jede Übung muss die Labels 'Frage:', 'A:', 'B:', 'C:', 'D:', 'Richtig:' und 'Erklärung:' in genau dieser Reihenfolge enthalten.",
+      en: "Each exercise must contain the labels 'Question:', 'A:', 'B:', 'C:', 'D:', 'Correct:' and 'Explanation:' in that exact order.",
+      es: "Cada ejercicio debe contener las etiquetas 'Pregunta:', 'A:', 'B:', 'C:', 'D:', 'Correcta:' y 'Explicación:' en ese orden exacto."
+    },
+    cloze: {
+      de: "Jede Übung muss die Labels 'Satz:', 'Lösungen:' und 'Erklärung:' enthalten. Verwende {{LUECKE}} als Platzhalter im Satz.",
+      en: "Each exercise must contain the labels 'Sentence:', 'Solutions:' and 'Explanation:'. Use {{LUECKE}} as placeholder in the sentence.",
+      es: "Cada ejercicio debe contener las etiquetas 'Oración:', 'Soluciones:' y 'Explicación:'. Usa {{LUECKE}} como marcador en la oración."
+    }
+  }[format][lang];
 
   const headwords = {
     de: {
@@ -716,45 +819,52 @@ function buildBatchPrompt({
       subject: "Fach",
       task: "Aufgabe",
       count: "Übungen",
-      format: "Verwende EXAKT dieses Format für jede Übung. Trenne die Übungen mit einer Leerzeile. Beginne jede neue Übung mit einer Zeile wie 'Übung 1:', 'Übung 2:' …",
+      format: "VERWENDE EXAKT DIESES FORMAT:",
+      exampleLabel: "BEISPIEL (nur zur Formatveranschaulichung – erzeuge eigene Übungen zum angegebenen Thema):",
       rules: "Regeln",
       ruleLevel: `Oberstufen-Niveau (${level}), fachlich korrekt, auf Deutsch.`,
-      ruleFormat: "Nur das Textformat, keine Einleitung, kein Markdown, keine Codeblöcke, kein Fließtext zwischen den Übungen.",
+      ruleFormat: "Keine Einleitung, kein Markdown, keine Codeblöcke, kein Fließtext zwischen den Übungen. Antworte NUR mit den Übungen im Format.",
       ruleTopic: `Jede Übung MUSS einen Begriff aus "${topic}" verwenden.`,
       ruleUnique: "Jede Übung behandelt einen ANDEREN Aspekt – keine inhaltlichen Wiederholungen zwischen den Übungen.",
-      startCue: `Erzeuge jetzt ${count} verschiedene Übungen zum Thema "${topic}" (Fach: ${subject}).`
+      startCue: `Erzeuge jetzt ${count} verschiedene Übungen zum Thema "${topic}" (Fach: ${subject}). Beginne SOFORT mit "Übung 1:".`
     },
     en: {
       topic: "Topic",
       subject: "Subject",
       task: "Task",
       count: "exercises",
-      format: "Use EXACTLY this format for each exercise. Separate exercises with a blank line. Start each new exercise with a line like 'Exercise 1:', 'Exercise 2:' …",
+      format: "USE EXACTLY THIS FORMAT:",
+      exampleLabel: "EXAMPLE (illustrates the format only – create your own exercises about the given topic):",
       rules: "Rules",
       ruleLevel: `Upper-school level (${level}), academically correct, in English.`,
-      ruleFormat: "Only the text format – no preamble, no markdown, no code blocks, no running text between exercises.",
+      ruleFormat: "No preamble, no markdown, no code blocks, no running text between exercises. Reply ONLY with the exercises in the format.",
       ruleTopic: `Every exercise MUST use a term from "${topic}".`,
       ruleUnique: "Each exercise must cover a DIFFERENT aspect – no content repetitions between exercises.",
-      startCue: `Now generate ${count} distinct exercises about the topic "${topic}" (Subject: ${subject}).`
+      startCue: `Now generate ${count} distinct exercises about the topic "${topic}" (Subject: ${subject}). Start IMMEDIATELY with "Exercise 1:".`
     },
     es: {
       topic: "Tema",
       subject: "Asignatura",
       task: "Tarea",
       count: "ejercicios",
-      format: "Utiliza EXACTAMENTE este formato para cada ejercicio. Separa los ejercicios con una línea en blanco. Comienza cada ejercicio nuevo con una línea del tipo 'Ejercicio 1:', 'Ejercicio 2:' …",
+      format: "UTILIZA EXACTAMENTE ESTE FORMATO:",
+      exampleLabel: "EJEMPLO (solo para ilustrar el formato – crea tus propios ejercicios sobre el tema indicado):",
       rules: "Reglas",
       ruleLevel: `Nivel de bachillerato superior (${level}), académicamente correcto, en español.`,
-      ruleFormat: "Solo el formato de texto – sin introducción, sin markdown, sin bloques de código, sin texto corrido entre ejercicios.",
+      ruleFormat: "Sin introducción, sin markdown, sin bloques de código, sin texto corrido entre ejercicios. Responde SOLO con los ejercicios en el formato.",
       ruleTopic: `Cada ejercicio DEBE usar un término de "${topic}".`,
       ruleUnique: "Cada ejercicio debe tratar un aspecto DIFERENTE – sin repeticiones de contenido entre ejercicios.",
-      startCue: `Genera ahora ${count} ejercicios distintos sobre el tema "${topic}" (Asignatura: ${subject}).`
+      startCue: `Genera ahora ${count} ejercicios distintos sobre el tema "${topic}" (Asignatura: ${subject}). Empieza INMEDIATAMENTE con "Ejercicio 1:".`
     }
   };
 
   const h = headwords[lang];
 
   const instruction = formatConfig.instruction[lang];
+
+  const exampleBlock = example
+    ? `\n${h.exampleLabel}\n${example}\n`
+    : "";
 
   return `${h.topic}: "${topic}" (${h.subject}: ${subject})
 
@@ -763,9 +873,10 @@ ${h.task}: Erstelle genau ${count} ${h.count}. ${instruction}
 ${h.format}
 
 ${singleTemplate}
-
+${exampleBlock}
 ${h.rules}:
 ${knowledge}
+- ${formatSpecificRule}
 - ${h.ruleLevel}
 - ${h.ruleFormat}
 - ${h.ruleTopic}
@@ -856,30 +967,114 @@ function splitIntoBlocks(text, primaryKey) {
 function rescueFromRaw(format, raw) {
   if (format !== "flashcards") return null;
 
-  const text = stripMarkdown(String(raw || ""))
-    .replace(/^\s*(?:Hier|Here|Aquí|Aqui)[\s\S]*?[:\-\u2013\u2014]\s*/i, "")
-    .replace(/\s+/g, " ")
+  // Erst Übungs-/Karteikarten-Header am Anfang jedes Blocks entfernen,
+  // damit die Rohtext-Analyse auf dem reinen Inhalt arbeitet.
+  const stripHeader = (chunk) => chunk
+    .replace(
+      /^\s*(?:Übung|Ubung|Uebung|Exercise|Ejercicio|Flashcard|Karteikarte|Karte|Tarjeta|Card|Aufgabe)\s*\d*\s*[:\-).\u2013\u2014]?\s*/i,
+      ""
+    )
+    .replace(/^\s*\(?\d+\)?\s*[:.)\-\u2013\u2014]\s*/, "")
     .trim();
 
-  if (text.length < 20) return null;
+  const base = stripMarkdown(String(raw || ""))
+    .replace(/^\s*(?:Hier|Here|Aquí|Aqui)[\s\S]*?[:\-\u2013\u2014]\s*/i, "")
+    .trim();
 
-  // Variante 1: Fragezeichen in der Mitte vorhanden → davor = Frage,
-  // danach = Antwort. Antwort auf ersten Satz nach dem Fragezeichen
-  // kürzen, damit die Karte knapp bleibt.
-  const qMarkIdx = text.search(/[?¿]/);
-  if (qMarkIdx > 10 && qMarkIdx < text.length - 10) {
-    const q = text.slice(0, qMarkIdx + 1).trim();
-    const rest = text.slice(qMarkIdx + 1).trim();
-    const firstSentence = rest.match(/^([^.!?]{10,200}[.!?])/)?.[1]?.trim()
-      || rest.slice(0, 200).trim();
-    if (q.length >= 5 && firstSentence.length >= 5) {
-      return [{ question: q, answer: firstSentence }];
+  if (base.length < 20) return null;
+
+  const cards = [];
+
+  // Falls das Modell wenigstens die „Übung N:"-Marker gesetzt hat, teilen
+  // wir daran auf und versuchen jeden Block einzeln zu retten.
+  const blockRe = /^\s*(?:Übung|Ubung|Uebung|Exercise|Ejercicio|Flashcard|Karteikarte|Karte|Tarjeta|Card|Aufgabe)\s*\d+\s*[:\-).]?.*$/gim;
+  const indices = [];
+  let m;
+  while ((m = blockRe.exec(base)) !== null) {
+    indices.push(m.index);
+  }
+
+  const chunks = indices.length >= 1
+    ? indices.map((start, i) => {
+        const end = i + 1 < indices.length ? indices[i + 1] : base.length;
+        return base.slice(start, end).trim();
+      })
+    : [base];
+
+  for (const rawChunk of chunks) {
+    const text = stripHeader(rawChunk).replace(/\s+/g, " ").trim();
+    if (text.length < 20) continue;
+
+    // Variante 1: Fragezeichen in der Mitte → davor Frage, danach Antwort.
+    const qMarkIdx = text.search(/[?¿]/);
+    if (qMarkIdx > 10 && qMarkIdx < text.length - 10) {
+      const q = text.slice(0, qMarkIdx + 1).trim();
+      const rest = text.slice(qMarkIdx + 1).trim();
+      const firstSentence = rest.match(/^([^.!?]{10,200}[.!?])/)?.[1]?.trim()
+        || rest.slice(0, 200).trim();
+      if (q.length >= 5 && firstSentence.length >= 5) {
+        cards.push({ question: q, answer: firstSentence });
+        continue;
+      }
+    }
+
+    // Variante 2: Prosa in zwei Sätzen – „X ist Y. Erläuterung …"
+    // Dann wird eine echte Frage daraus abgeleitet, die den Hauptbegriff
+    // des ersten Satzes aufgreift. Lieber eine Karte zum konkreten Stoff
+    // als keine Karte.
+    const sentences = text.match(/[^.!?]{10,}[.!?]/g);
+    if (sentences && sentences.length >= 2) {
+      const first = sentences[0].trim();
+      const rest = sentences.slice(1).join(" ").trim();
+      const derived = deriveQuestion(first);
+      if (derived && rest.length >= 10) {
+        cards.push({
+          question: derived,
+          answer: rest.slice(0, 220).trim()
+        });
+        continue;
+      }
     }
   }
 
-  // Keine echte Q&A-Struktur auffindbar → wir rekonstruieren KEINE
-  // Pseudo-Karte. Lieber nichts zurückgeben als eine Karte, die nicht
-  // dem Q&A-Prinzip folgt.
+  return cards.length ? cards : null;
+}
+
+/**
+ * Leitet aus einem deklarativen Satz eine Lernfrage ab, ohne eine
+ * generische „Was ist wichtig?"-Floskel zu produzieren. Erkennt die
+ * häufigsten Kopula-Muster („X ist Y", „X bezeichnet Y") und schneidet
+ * den Hauptbegriff heraus.
+ */
+function deriveQuestion(sentence) {
+  const clean = sentence.replace(/[.!]+$/g, "").trim();
+  if (clean.length < 12) return null;
+
+  // „X ist/sind/war/waren Y" → „Was ist X?"
+  const copula = clean.match(/^(.{3,80}?)\s+(?:ist|sind|war|waren|bedeutet|bezeichnet|beschreibt|umfasst|is|are|was|were|means|describes|includes|es|son|era|eran|significa|describe|incluye)\b/i);
+  if (copula) {
+    const subject = copula[1].replace(/^der\s+|^die\s+|^das\s+|^the\s+|^el\s+|^la\s+|^los\s+|^las\s+/i, "").trim();
+    if (subject.length >= 3) {
+      return `Was ist ${subject}?`;
+    }
+  }
+
+  // „X hat/haben Y" → „Welche Rolle hat X?"
+  const possessive = clean.match(/^(.{3,80}?)\s+(?:hat|haben|hatte|hatten|has|have|had|tiene|tienen|tenía|tenían)\b/i);
+  if (possessive) {
+    const subject = possessive[1].replace(/^der\s+|^die\s+|^das\s+|^the\s+|^el\s+|^la\s+|^los\s+|^las\s+/i, "").trim();
+    if (subject.length >= 3) {
+      return `Welche Rolle hat ${subject}?`;
+    }
+  }
+
+  // Hauptbegriff heuristisch: erstes Nomen (Großbuchstabe) oder erste
+  // Nominalphrase bis zum ersten Verb.
+  const noun = clean.match(/\b([A-ZÄÖÜ][\wäöüßéèáíóúñ-]{2,}(?:\s+[a-zäöüß][\wäöüßéèáíóúñ-]{2,})?)/);
+  if (noun && noun[1].length >= 4) {
+    return `Welche Bedeutung hat ${noun[1]}?`;
+  }
+
   return null;
 }
 
