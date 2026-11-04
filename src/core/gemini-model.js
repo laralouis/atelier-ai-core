@@ -42,6 +42,10 @@ function isUsableModel(id) {
   if (!id) return false;
   if (/embedding|embed|aqa|image-generation|imagen|tts|vision-tuning|tuning/i.test(id)) return false;
   if (/-exp(-|$)|preview|latest/i.test(id)) return false;
+  // Google blockiert gemini-2.5-flash für neu erstellte API-Keys, listet den
+  // Namen aber weiter als "verfügbar". Bis Google das konsistent macht, blenden
+  // wir ihn aus – die 2.0-Flash-Modelle sind für alle Free-Tier-Keys offen.
+  if (/^gemini-2\.5-flash$/i.test(id)) return false;
   return true;
 }
 
@@ -102,6 +106,12 @@ function buildUserMessage(request, context) {
 }
 
 function describeHttpError(status, errorText) {
+  if (status === 404) {
+    if (/no longer available to new users/i.test(errorText || "")) {
+      return "Dieses Gemini-Modell ist für neu angelegte API-Keys gesperrt. Bitte im Dropdown stattdessen 'gemini-2.0-flash' oder 'gemini-2.0-flash-lite' auswählen und neu verbinden.";
+    }
+    return "Google kennt dieses Modell nicht (mehr). Bitte ein anderes aus der Liste wählen.";
+  }
   if (status === 400) {
     return "Anfrage wurde von Google abgelehnt. Vielleicht ist das Modell für deinen Account nicht freigeschaltet.";
   }

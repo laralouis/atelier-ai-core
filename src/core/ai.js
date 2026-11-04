@@ -10,8 +10,8 @@
  * `providerType` und wird über `provider` angesprochen.
  */
 
-import { localModel } from "./local-model.js?v=20261103zw";
-import { geminiModel } from "./gemini-model.js?v=20261103zw";
+import { localModel } from "./local-model.js?v=20261103zx";
+import { geminiModel } from "./gemini-model.js?v=20261103zx";
 
 const PROVIDER_STORAGE_KEY = "atelier_provider";
 
