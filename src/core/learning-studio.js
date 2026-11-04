@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zo";
-import { knowledgeBase } from "./knowledge.js?v=20261103zo";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zv";
+import { knowledgeBase } from "./knowledge.js?v=20261103zv";
 
-const BUILD = "20261103zo";
+const BUILD = "20261103zv";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
@@ -39,6 +39,68 @@ function normalizeForCompare(value) {
     .replace(/[¿?¡!.,;:()"'`´*_\-\u2013\u2014]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+const TOPIC_STOP_WORDS = new Set([
+  "der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "eines",
+  "und", "oder", "aber", "auch", "als", "an", "am", "auf", "aus", "bei",
+  "bis", "durch", "für", "fuer", "gegen", "im", "in", "ins", "mit", "nach",
+  "ohne", "über", "ueber", "um", "unter", "von", "vor", "zu", "zum", "zur",
+  "the", "a", "an", "of", "and", "or", "to", "for", "with", "in", "on",
+  "el", "la", "los", "las", "un", "una", "y", "o", "de", "del", "al"
+]);
+
+function extractTopicKeywords(topic) {
+  const raw = String(topic || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ");
+
+  return [...new Set(
+    raw.split(/\s+/)
+      .filter(w => w.length >= 3 && !TOPIC_STOP_WORDS.has(w))
+  )];
+}
+
+function normalizeForTopicMatch(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss");
+}
+
+/**
+ * Prüft, ob eine Übung wenigstens EIN zentrales Keyword des angefragten
+ * Themas enthält. Prefix-Match (erste 5 Zeichen) deckt deutsche Flexion
+ * grob ab (Pflanze → Pflanzen → pflanzlich). Verhindert, dass die KI
+ * Übungen zu einem anderen Thema liefert, selbst wenn der Prompt klar
+ * war.
+ */
+function exerciseMatchesTopic(item, format, keywords) {
+  if (!keywords.length) return true;
+
+  const parts = [];
+  if (format === "flashcards") {
+    parts.push(item.question, item.answer);
+  } else if (format === "multipleChoice") {
+    parts.push(item.question, ...(item.options || []), item.explanation);
+  } else if (format === "cloze") {
+    parts.push(item.text, ...(item.answers || []), item.explanation);
+  }
+
+  const haystack = normalizeForTopicMatch(parts.filter(Boolean).join(" "));
+
+  return keywords.some(kw => {
+    if (haystack.includes(kw)) return true;
+    if (kw.length >= 5) {
+      const prefix = kw.slice(0, 5);
+      if (haystack.includes(prefix)) return true;
+    }
+    return false;
+  });
 }
 
 /**
@@ -1128,6 +1190,13 @@ function buildBatchPrompt({
   const formatConfig = FORMATS[format];
   const singleTemplate = formatConfig.template[lang];
 
+  // Topic-Schlüsselwörter für Prompt-Regel: zwingt das Modell, in JEDER
+  // Übung mindestens eines der zentralen Begriffe wörtlich zu nennen.
+  const topicKeywordsForPrompt = extractTopicKeywords(topic).slice(0, 5);
+  const topicKeywordsList = topicKeywordsForPrompt.length
+    ? topicKeywordsForPrompt.join(", ")
+    : topic;
+
   // Fachspezifisches Few-Shot-Beispiel wählen. Zwischenergebnis vorher:
   // ein Choral-Beispiel führte zu Choral-Antworten in Mathematik.
   // Deshalb jetzt pro Fach ein eigenes Beispiel; nur wenn ein Fach
@@ -1187,6 +1256,7 @@ function buildBatchPrompt({
       ruleLevel: `Oberstufen-Niveau (${level}), fachlich korrekt, auf Deutsch.`,
       ruleFormat: "Keine Einleitung, kein Markdown, keine Codeblöcke, kein Fließtext zwischen den Übungen. Antworte NUR mit den Übungen im Format.",
       ruleTopic: `Jede Übung MUSS inhaltlich zum Thema "${topic}" (Fach: ${subject}) gehören. Keine Übung zu einem anderen Fach oder Thema.`,
+      ruleTopicKeyword: `In JEDER einzelnen Übung MUSS mindestens eines dieser Schlüsselwörter des Themas WÖRTLICH vorkommen (in Frage, Satz oder Antwort): ${topicKeywordsList}. Übungen ohne diese Begriffe gelten als Thema-Verfehlung und sind verboten.`,
       ruleUnique: "Jede Übung behandelt einen ANDEREN Aspekt – keine inhaltlichen Wiederholungen zwischen den Übungen.",
       startCue: `Erzeuge jetzt ${count} verschiedene Übungen zum Thema "${topic}" im Fach ${subject}. Beginne SOFORT mit "Übung 1:".`
     },
@@ -1202,6 +1272,7 @@ function buildBatchPrompt({
       ruleLevel: `Upper-school level (${level}), academically correct, in English.`,
       ruleFormat: "No preamble, no markdown, no code blocks, no running text between exercises. Reply ONLY with the exercises in the format.",
       ruleTopic: `Every exercise MUST address the topic "${topic}" (Subject: ${subject}). No exercise about a different subject or topic.`,
+      ruleTopicKeyword: `EVERY single exercise MUST contain at least one of these topic keywords VERBATIM (in question, sentence or answer): ${topicKeywordsList}. Exercises without any of these words count as off-topic and are forbidden.`,
       ruleUnique: "Each exercise must cover a DIFFERENT aspect – no content repetitions between exercises.",
       startCue: `Now generate ${count} distinct exercises about "${topic}" in ${subject}. Start IMMEDIATELY with "Exercise 1:".`
     },
@@ -1217,6 +1288,7 @@ function buildBatchPrompt({
       ruleLevel: `Nivel de bachillerato superior (${level}), académicamente correcto, en español.`,
       ruleFormat: "Sin introducción, sin markdown, sin bloques de código, sin texto corrido entre ejercicios. Responde SOLO con los ejercicios en el formato.",
       ruleTopic: `Cada ejercicio DEBE tratar el tema "${topic}" (Asignatura: ${subject}). Ningún ejercicio sobre otra asignatura u otro tema.`,
+      ruleTopicKeyword: `En CADA ejercicio DEBE aparecer LITERALMENTE al menos una de estas palabras clave del tema (en la pregunta, la oración o la respuesta): ${topicKeywordsList}. Los ejercicios sin ninguna de estas palabras se consideran fuera de tema y están prohibidos.`,
       ruleUnique: "Cada ejercicio debe tratar un aspecto DIFERENTE – sin repeticiones de contenido entre ejercicios.",
       startCue: `Genera ahora ${count} ejercicios distintos sobre "${topic}" en ${subject}. Empieza INMEDIATAMENTE con "Ejercicio 1:".`
     }
@@ -1244,7 +1316,26 @@ function buildBatchPrompt({
     es: `Tu respuesta contiene EXACTAMENTE ${count} ejercicios: ${enumeration}. Ni más, ni menos. Solo detente tras el último ejercicio.`
   }[lang];
 
-  return `${h.topic}: "${topic}" (${h.subject}: ${subject})
+  // Topic-Lock: ganz oben, ganz unten und als Regel wiederholen. Kleine
+  // Modelle driften sonst zu Referenzmaterialien oder dem Beispielinhalt.
+  const topicLock = {
+    de: `=== THEMENSPERRE ===
+Pflicht-Thema: "${topic}" (Fach: ${subject}).
+JEDE Übung behandelt NUR dieses Thema. Verweigere jede Übung zu einem anderen Stoff.
+Falls Referenzmaterial oder Beispiele einen anderen Inhalt zeigen, IGNORIERE deren Inhalt – sie dienen nur zur Formatveranschaulichung bzw. als zusätzlicher Kontext.`,
+    en: `=== TOPIC LOCK ===
+Required topic: "${topic}" (Subject: ${subject}).
+EVERY exercise is strictly about this topic. Refuse any exercise about a different subject.
+If reference material or examples show different content, IGNORE their content – they are only for format/context.`,
+    es: `=== BLOQUEO DE TEMA ===
+Tema obligatorio: "${topic}" (Asignatura: ${subject}).
+CADA ejercicio trata ÚNICAMENTE este tema. Rechaza cualquier ejercicio sobre otro contenido.
+Si el material de referencia o los ejemplos muestran otro contenido, IGNÓRALOS – solo sirven para ilustrar formato/contexto.`
+  }[lang];
+
+  return `${topicLock}
+
+${h.topic}: "${topic}" (${h.subject}: ${subject})
 
 ${h.task}: Erstelle genau ${count} ${h.count}. ${instruction}
 
@@ -1263,9 +1354,12 @@ ${formatExtraRule}
 - ${h.ruleLevel}
 - ${h.ruleFormat}
 - ${h.ruleTopic}
+- ${h.ruleTopicKeyword}
 - ${h.ruleUnique}${mcLine}
 
-${h.startCue}`;
+${h.startCue}
+
+${topicLock}`;
 }
 
 /**
@@ -1530,7 +1624,7 @@ async function generateBatch({
 
   const blocks = splitIntoBlocks(raw, primaryKey);
 
-  const items = [];
+  let items = [];
   const parseErrors = [];
 
   for (let i = 0; i < blocks.length; i++) {
@@ -1541,6 +1635,35 @@ async function generateBatch({
       items.push(...validated);
     } catch (err) {
       parseErrors.push({ index: i + 1, message: err?.message || String(err) });
+    }
+  }
+
+  // Themen-Treue filtern. Übungen, die KEIN einziges Topic-Keyword
+  // enthalten, sind off-topic (Modell driftet trotz Themensperre).
+  // Nur anwenden, wenn danach noch etwas übrig bleibt – sonst lieber
+  // ungefilterte Übungen anzeigen als gar nichts.
+  const topicKeywords = extractTopicKeywords(topic);
+  if (items.length && topicKeywords.length) {
+    const matched = items.filter(item =>
+      exerciseMatchesTopic(item, format, topicKeywords)
+    );
+
+    if (matched.length) {
+      const dropped = items.length - matched.length;
+      if (dropped > 0) {
+        parseErrors.push({
+          index: 0,
+          message: `${dropped} Übung(en) wegen Thema-Verfehlung aussortiert.`
+        });
+        console.warn(
+          `ATELIER AI: ${dropped} Übung(en) off-topic verworfen (Thema: „${topic}").`
+        );
+      }
+      items = matched;
+    } else {
+      console.warn(
+        `ATELIER AI: ALLE Übungen off-topic für „${topic}" – zeige sie trotzdem, damit die Schülerin eine Chance hat.`
+      );
     }
   }
 
@@ -1707,13 +1830,13 @@ export class LearningStudio {
     // liegt bereits im IndexedDB-Cache – es wird nur die WebGPU-Pipeline
     // neu aufgebaut, kein Netzwerk-Download.
     //
-    // Zwei Anläufe: iPadOS Safari gibt den GPU-Adapter nach einem Dispose
-    // manchmal erst nach 10+ Sekunden wieder frei. Wenn der erste
-    // Rettungsversuch wegen „GPU-Zugriff blockiert" scheitert, warten
-    // wir länger und versuchen es noch einmal.
+    // Drei Anläufe mit progressiv längeren Wartezeiten: iPadOS Safari
+    // gibt den GPU-Adapter nach einem Dispose manchmal erst nach 15-20
+    // Sekunden wieder frei – Metal-Ressourcen werden asynchron freigegeben.
     const reloadAttempts = [
       { label: "KI-Modell wird automatisch neu geladen …", preWait: 0 },
-      { label: "GPU reagiert noch nicht – zweiter Rettungsversuch …", preWait: 6000 }
+      { label: "GPU reagiert noch nicht – zweiter Rettungsversuch …", preWait: 6000 },
+      { label: "iPad gibt Grafikspeicher langsam frei – dritter Versuch …", preWait: 15000 }
     ];
 
     for (const attempt of reloadAttempts) {
@@ -1789,31 +1912,50 @@ export class LearningStudio {
 
     // Falls die Batch-Antwort überhaupt keine gültige Übung lieferte
     // und das Modell NOCH lebt (ggf. nach automatischem Neuladen):
-    // ein zweiter, kleinerer Versuch. Mehr nicht – jede weitere
-    // Inferenz riskiert den GPU-Zustand.
-    if (
-      items.length === 0 &&
-      !modelUnrecoverable &&
-      atelierAI.getStatus().localModel.ready
-    ) {
+    // zwei konservative Folgeversuche mit absteigender Batch-Größe.
+    // Kleine Batches (2–3 Übungen) überleben den iPad-WebGPU-Adapter
+    // deutlich zuverlässiger als die 5–6er Erst-Anfrage.
+    const recoveryBatchCounts = [Math.min(3, amount), 2];
+    for (const recoveryCount of recoveryBatchCounts) {
+      if (
+        items.length > 0 ||
+        modelUnrecoverable ||
+        !atelierAI.getStatus().localModel.ready
+      ) {
+        break;
+      }
+
       console.warn(
-        "ATELIER AI: Batch leer – ein zweiter Versuch mit kleinerer Anfrage."
+        `ATELIER AI: Batch leer – Rettungsversuch mit ${recoveryCount} Übungen.`
       );
+
+      if (typeof onProgress === "function") {
+        onProgress({
+          completed: 0,
+          attempted: 0,
+          total: amount,
+          percentage: 72,
+          note: `Zweiter Anlauf mit nur ${recoveryCount} Übungen …`
+        });
+      }
+
       try {
+        await atelierAI.softResetChat();
         const result = await generateBatch({
           format,
           subject,
           topic,
           level,
           materialContext,
-          count: Math.min(3, amount),
+          count: recoveryCount,
           language
         });
         items = result.items;
       } catch (retryError) {
         failures.push({
-          index: 3,
-          message: retryError?.message || String(retryError)
+          index: failures.length + 1,
+          message: `Rettung mit ${recoveryCount} Übungen fehlgeschlagen: ` +
+            (retryError?.message || String(retryError))
         });
         if (gpuDeathPattern.test(String(retryError?.message || ""))) {
           modelUnrecoverable = true;
@@ -1821,33 +1963,41 @@ export class LearningStudio {
       }
     }
 
-    // Flashcard-spezifische Einmal-Nachlieferung: wenn weniger Karten
-    // als angefragt da sind, höchstens EINEN weiteren Lauf. Mehr nicht –
-    // die alte Zwei-Runden-Schleife hat auf dem iPad den WebGPU-Adapter
-    // zerlegt. MC/Cloze bekommen keine Nachlieferung, weil jede ihrer
-    // Übungen ~2× so viele Tokens kostet und die Pipeline schneller OOMt.
-    if (
-      format === "flashcards" &&
-      items.length > 0 &&
-      items.length < amount &&
-      !modelUnrecoverable &&
-      atelierAI.getStatus().localModel.ready
-    ) {
-      const missing = amount - items.length;
+    // Format-agnostische Nachlieferung: wenn weniger Übungen als
+    // angefragt da sind, bis zu ZWEI zusätzliche Durchläufe. Mehr nicht –
+    // jede weitere Inferenz riskiert den WebGPU-Adapter auf dem iPad.
+    // MC und Cloze pro Nachlauf auf max. 2 Übungen begrenzen, damit das
+    // Token-Budget nicht wieder gegen die 720er-Grenze läuft.
+    const dedupKey = format === "cloze" ? "text" : "question";
+    const perTopUpCap = format === "flashcards" ? 3 : 2;
+    const maxTopUpRounds = 2;
+
+    for (let round = 1; round <= maxTopUpRounds; round++) {
+      if (
+        items.length === 0 ||
+        items.length >= amount ||
+        modelUnrecoverable ||
+        !atelierAI.getStatus().localModel.ready
+      ) {
+        break;
+      }
+
+      const missing = Math.min(perTopUpCap, amount - items.length);
+      const label = format === "flashcards"
+        ? `Es fehlen noch ${amount - items.length} Karte${amount - items.length === 1 ? "" : "n"} – Nachlieferung …`
+        : `Es fehlen noch ${amount - items.length} Übung${amount - items.length === 1 ? "" : "en"} – Nachlieferung …`;
 
       if (typeof onProgress === "function") {
         onProgress({
           completed: items.length,
           attempted: amount,
           total: amount,
-          percentage: 80,
-          note: `Es fehlen noch ${missing} Karte${missing === 1 ? "" : "n"} – Nachlieferung …`
+          percentage: 80 + round * 5,
+          note: label
         });
       }
 
       try {
-        // Weicher Reset zwischen den Durchläufen, damit der KV-Cache
-        // nicht beide Prompts gleichzeitig im Speicher hält.
         await atelierAI.softResetChat();
 
         const result = await generateBatch({
@@ -1860,26 +2010,27 @@ export class LearningStudio {
           language
         });
 
-        const existingQuestions = new Set(
-          items.map(entry => normalizeForCompare(entry.question || ""))
+        const existingKeys = new Set(
+          items.map(entry => normalizeForCompare(entry[dedupKey] || ""))
         );
         for (const entry of result.items) {
-          const key = normalizeForCompare(entry.question || "");
-          if (!existingQuestions.has(key)) {
+          const key = normalizeForCompare(entry[dedupKey] || "");
+          if (key && !existingKeys.has(key)) {
             items.push(entry);
-            existingQuestions.add(key);
+            existingKeys.add(key);
           }
           if (items.length >= amount) break;
         }
       } catch (topUpError) {
         failures.push({
           index: failures.length + 1,
-          message: "Nachlieferung fehlgeschlagen: " + (topUpError?.message || String(topUpError))
+          message: `Nachlieferung Runde ${round} fehlgeschlagen: ` + (topUpError?.message || String(topUpError))
         });
         if (gpuDeathPattern.test(String(topUpError?.message || ""))) {
           modelUnrecoverable = true;
         }
-        console.warn("ATELIER AI: Flashcard-Nachlieferung fehlgeschlagen:", topUpError);
+        console.warn(`ATELIER AI: Nachlieferung Runde ${round} fehlgeschlagen:`, topUpError);
+        break;
       }
     }
 
@@ -1896,16 +2047,16 @@ export class LearningStudio {
       const lastMessage =
         failures[failures.length - 1]?.message || "unbekannt";
 
-      // Bei totalem GPU-Ausfall ist Reload auf iPadOS Safari leider
-      // der einzig verlässliche Weg. Klarer Hinweis statt vager
-      // Fehlermeldung.
+      // Bei anhaltendem GPU-Ausfall konkrete Handlungsschritte in
+      // absteigender Härte: erst warten, dann Anzahl reduzieren,
+      // dann kleineres Modell, erst zuletzt Tab-Reset.
       if (modelUnrecoverable) {
         throw new Error(
-          "Das KI-Modell hat seinen GPU-Zustand verloren und konnte " +
-          "trotz zweier Rettungsversuche nicht wiederhergestellt werden. " +
-          "Bitte in Safari diesen Tab komplett schließen (Tab-Übersicht → " +
-          "X-Symbol) und die Seite neu öffnen. Das Modell liegt im Cache, " +
-          "lädt also schnell wieder."
+          "Der Grafikspeicher des iPads ist gerade überlastet. " +
+          "Versuch es bitte so: (1) ca. 30 Sekunden warten, dann erneut auf 'Übungen erstellen' tippen. " +
+          "(2) Falls es wieder scheitert, die Anzahl der Übungen auf 2 oder 3 reduzieren. " +
+          "(3) Oder unter 'KI-Modell' ein kleineres Modell wählen. " +
+          "Nur wenn nichts davon hilft: diesen Tab in Safari schließen und die Seite neu öffnen."
         );
       }
 

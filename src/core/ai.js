@@ -1,17 +1,23 @@
 
 /**
  * ATELIER AI – Central AI Coordinator
- * Version 0.3
+ * Version 0.4
  *
- * Verbindet den zentralen KI-Kern
- * mit dem lokalen WebLLM-Modell.
+ * Verbindet den zentralen KI-Kern mit zwei Anbietern:
+ * - WebLLM (lokal, läuft im Browser über WebGPU)
+ * - Gemini (Cloud, Google-API)
+ * Die Schülerin kann umschalten, der aktive Anbieter steht in
+ * `providerType` und wird über `provider` angesprochen.
  */
 
-import { localModel } from "./local-model.js?v=20261103zo";
+import { localModel } from "./local-model.js?v=20261103zv";
+import { geminiModel } from "./gemini-model.js?v=20261103zv";
+
+const PROVIDER_STORAGE_KEY = "atelier_provider";
 
 export const ATELIER_CONFIG = {
   name: "ATELIER AI",
-  version: "0.3.0",
+  version: "0.4.0",
   language: "de",
   schoolLevel: "Gymnasium Bayern – Jahrgangsstufe 12/13"
 };
@@ -47,6 +53,26 @@ const MODES = [
   "review"
 ];
 
+const VALID_PROVIDERS = ["local", "gemini"];
+
+function readStoredProvider() {
+  try {
+    const stored = localStorage.getItem(PROVIDER_STORAGE_KEY);
+    if (VALID_PROVIDERS.includes(stored)) return stored;
+  } catch {
+    /* ignore */
+  }
+  return "local";
+}
+
+function writeStoredProvider(type) {
+  try {
+    localStorage.setItem(PROVIDER_STORAGE_KEY, type);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Bestimmt die Arbeitssprache anhand des gewählten Fachs.
  * Englisch → Englisch, Spanisch → Spanisch, sonst Deutsch.
@@ -76,50 +102,63 @@ function localizedSubject(subject, language) {
 
 export class AtelierAI {
   constructor() {
-    this.provider = localModel;
+    this.localModel = localModel;
+    this.geminiModel = geminiModel;
+    this.providerType = readStoredProvider();
     this.modules = MODULES;
   }
 
+  get provider() {
+    return this.providerType === "gemini" ? this.geminiModel : this.localModel;
+  }
+
+  setProvider(type) {
+    const clean = VALID_PROVIDERS.includes(type) ? type : "local";
+    this.providerType = clean;
+    writeStoredProvider(clean);
+    return this.providerType;
+  }
+
   /**
-   * Prüft die lokale GPU-Unterstützung.
+   * Prüft, ob der aktive Anbieter einsatzbereit ist.
    */
   async checkSupport() {
-    return await localModel.checkSupport();
+    return await this.provider.checkSupport();
   }
 
   /**
-   * Gibt verfügbare kleine Modelle zurück.
+   * Gibt verfügbare Modelle des aktiven Anbieters zurück.
    */
   async getAvailableModels() {
-    return await localModel.getAvailableModels();
+    return await this.provider.getAvailableModels();
   }
 
   /**
-   * Lädt ein ausgewähltes lokales Modell.
+   * Lädt ein ausgewähltes Modell beim aktiven Anbieter.
    */
   async loadModel(modelId, onProgress) {
-    return await localModel.load(modelId, onProgress);
+    return await this.provider.load(modelId, onProgress);
   }
 
   /**
-   * Entlädt das aktuelle Modell.
+   * Entlädt das aktuelle Modell des aktiven Anbieters.
    */
   async unloadModel() {
-    return await localModel.unload();
+    return await this.provider.unload();
   }
 
   /**
-   * Lädt das zuletzt verwendete Modell automatisch neu.
+   * Lädt das zuletzt verwendete Modell des aktiven Anbieters neu.
    */
   async reloadModel(onProgress) {
-    return await localModel.reload(onProgress);
+    return await this.provider.reload(onProgress);
   }
 
   /**
    * Weiches Zurücksetzen des Chat-States zwischen Batches.
    */
   async softResetChat() {
-    return await localModel.softResetChat();
+    return await this.provider.softResetChat();
   }
 
   /**
@@ -266,13 +305,15 @@ Weitere Regeln:
   }
 
   /**
-   * Führt eine Lernanfrage mit dem lokalen Modell aus.
+   * Führt eine Lernanfrage mit dem aktiven Anbieter aus.
    */
   async ask(request) {
-    if (!localModel.getStatus().ready) {
+    if (!this.provider.getStatus().ready) {
       return {
         status: "offline",
-        message: "Bitte zuerst ein lokales KI-Modell laden.",
+        message: this.providerType === "gemini"
+          ? "Bitte zuerst unter KI-Modell einen Gemini-Key hinterlegen und verbinden."
+          : "Bitte zuerst ein lokales KI-Modell laden.",
         request
       };
     }
@@ -282,15 +323,21 @@ Weitere Regeln:
 
   /**
    * Zeigt den aktuellen Systemstatus.
+   * Für Abwärtskompatibilität bleibt das Feld `localModel` erhalten und
+   * spiegelt immer den aktiven Anbieter – alte UI-Prüfungen gegen
+   * `localModel.ready` funktionieren damit weiter.
    */
   getStatus() {
+    const activeStatus = this.provider.getStatus();
     return {
       name: ATELIER_CONFIG.name,
       version: ATELIER_CONFIG.version,
-      providerConnected: localModel.getStatus().ready,
-      provider: "WebLLM",
-      model: localModel.getStatus().model,
-      localModel: localModel.getStatus(),
+      providerConnected: activeStatus.ready,
+      providerType: this.providerType,
+      provider: this.providerType === "gemini" ? "Gemini" : "WebLLM",
+      model: activeStatus.model,
+      active: activeStatus,
+      localModel: activeStatus,
       subjects: SUBJECTS.length,
       modules: Object.keys(MODULES).length
     };

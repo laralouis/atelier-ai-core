@@ -17,6 +17,7 @@ const MAX_LOCAL_CHARS = 900;
 const MAX_EXTERNAL_CHARS = 300;
 const MAX_OUTPUT_TOKENS = 350;
 const MAX_OUTPUT_TOKENS_QUIZ = 280;
+const MAX_OUTPUT_TOKENS_REVIEW = 680;
 const MAX_HISTORY_MESSAGES = 2;
 const MAX_HISTORY_CHARS_PER_MESSAGE = 400;
 const MAX_HISTORY_CHARS_TOTAL = 800;
@@ -597,12 +598,14 @@ export class LocalModel {
           200 + quizCount * perItem
         );
 
+        const longForm = request.metadata?.longForm === true;
+
         const stream = await engine.chat.completions.create({
           messages,
-          temperature: isQuiz ? 0.2 : 0.1,
+          temperature: isQuiz ? 0.1 : 0.1,
           max_tokens: isQuiz
             ? Math.max(MAX_OUTPUT_TOKENS_QUIZ, quizTokens)
-            : MAX_OUTPUT_TOKENS,
+            : (longForm ? MAX_OUTPUT_TOKENS_REVIEW : MAX_OUTPUT_TOKENS),
           stream: true
         });
 
