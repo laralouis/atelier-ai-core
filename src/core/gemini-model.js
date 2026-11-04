@@ -135,7 +135,8 @@ function describeHttpError(status, errorText) {
     return "Du hast das kostenlose Gemini-Kontingent für dieses Zeitfenster aufgebraucht. Bitte ca. eine Minute warten oder morgen weitermachen.";
   }
   if (status >= 500) {
-    return "Google-Server antwortet gerade nicht. Bitte kurz später erneut versuchen.";
+    const detail = errorText ? " Details: " + errorText.replace(/\s+/g, " ").slice(0, 220) : "";
+    return `Google-Server antwortet gerade nicht (Code ${status}).${detail}`;
   }
   return `Google-Fehler (Code ${status}).` + (errorText ? " " + errorText.slice(0, 200) : "");
 }
@@ -293,6 +294,8 @@ export class GeminiModel {
         text: "Verbindung zu Google wird getestet ..."
       });
 
+      // Gemini 3.x hat Default-Thinking aktiv. Ohne thinkingBudget: 0 reicht
+      // maxOutputTokens: 5 nicht fürs Denken und Google wirft dann 5xx.
       const testResponse = await fetch(
         `${GEMINI_API_BASE}/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(this.apiKey)}`,
         {
@@ -304,7 +307,8 @@ export class GeminiModel {
             ],
             generationConfig: {
               temperature: 0,
-              maxOutputTokens: 5
+              maxOutputTokens: 50,
+              thinkingConfig: { thinkingBudget: 0 }
             }
           })
         }
@@ -408,7 +412,10 @@ export class GeminiModel {
         contents,
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: maxTokens
+          maxOutputTokens: maxTokens,
+          // Thinking aus: Modell soll direkt antworten, nicht im Hintergrund
+          // "nachdenken". Spart Tokens und vermeidet 5xx auf 3.x-Modellen.
+          thinkingConfig: { thinkingBudget: 0 }
         }
       };
 
