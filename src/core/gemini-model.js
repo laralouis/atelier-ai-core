@@ -11,40 +11,53 @@
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const STORAGE_KEY = "atelier_gemini_key";
 
-// Fallback-Liste, falls kein Key gespeichert ist oder die Model-Listing-API
-// nicht erreichbar ist. gemini-2.5-flash steht hier bewusst NICHT mehr drin,
-// weil Google den Namen für frisch angelegte Projekte gesperrt hat.
+// Fallback-Liste – aktive Free-Tier-Modelle (Stand November 2026).
+// Google hat gemini-2.0-flash am 1. Juni 2026 abgeschaltet und sperrt
+// gemini-2.5-flash für neu angelegte API-Keys. Deshalb liegen diese
+// Namen NICHT mehr im Fallback; sie werden auch aktiv ausgeblendet.
 const AVAILABLE_MODELS = [
   {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash (empfohlen)",
-    note: "Stabil, schnell, zuverlässig"
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash (empfohlen)",
+    note: "Neuestes kostenloses Modell, beste Qualität"
   },
   {
-    id: "gemini-2.0-flash-lite",
-    name: "Gemini 2.0 Flash Lite",
-    note: "Am schnellsten, etwas einfacher"
+    id: "gemini-3.6-flash",
+    name: "Gemini 3.6 Flash",
+    note: "Stabil, schnell"
+  },
+  {
+    id: "gemini-3.5-flash-lite",
+    name: "Gemini 3.5 Flash Lite",
+    note: "Leichtgewichtig, sehr schnell"
+  },
+  {
+    id: "gemini-3.1-flash-lite",
+    name: "Gemini 3.1 Flash Lite",
+    note: "Älter, weiter kostenlos"
   }
 ];
 
 // Bevorzugte Sortierreihenfolge im Dropdown. Niedriger = weiter oben.
 function rankModel(id) {
-  if (/flash-lite/.test(id)) return 2;
-  if (/2\.0-flash(?!-lite)/.test(id)) return 1;
-  if (/2\.5-flash/.test(id)) return 3;
-  if (/pro/.test(id)) return 4;
+  if (/^gemini-3\.8-flash/.test(id)) return 1;
+  if (/^gemini-3\.6-flash/.test(id)) return 2;
+  if (/^gemini-3\.5-flash-lite/.test(id)) return 3;
+  if (/^gemini-3\.1-flash-lite/.test(id)) return 4;
+  if (/^gemini-3\./.test(id)) return 5;
+  if (/pro/.test(id)) return 6;
   return 9;
 }
 
 // Modelle rausfiltern, die für den Chat-Flow ungeeignet sind (Embeddings,
-// Bild-/Vision-Tuning, experimentelle / "latest"-Platzhalter).
+// Bild-/Vision-Tuning, experimentelle / "latest"-Platzhalter) oder von
+// Google für neue Free-Tier-Keys gesperrt bzw. komplett eingestellt sind.
 function isUsableModel(id) {
   if (!id) return false;
   if (/embedding|embed|aqa|image-generation|imagen|tts|vision-tuning|tuning/i.test(id)) return false;
   if (/-exp(-|$)|preview|latest/i.test(id)) return false;
-  // Google blockiert gemini-2.5-flash für neu erstellte API-Keys, listet den
-  // Namen aber weiter als "verfügbar". Bis Google das konsistent macht, blenden
-  // wir ihn aus – die 2.0-Flash-Modelle sind für alle Free-Tier-Keys offen.
+  // Deprecated bzw. für neue Keys gesperrt: 2.0er und 2.5-flash raus.
+  if (/^gemini-2\.0-flash/i.test(id)) return false;
   if (/^gemini-2\.5-flash$/i.test(id)) return false;
   return true;
 }
@@ -108,9 +121,9 @@ function buildUserMessage(request, context) {
 function describeHttpError(status, errorText) {
   if (status === 404) {
     if (/no longer available to new users/i.test(errorText || "")) {
-      return "Dieses Gemini-Modell ist für neu angelegte API-Keys gesperrt. Bitte im Dropdown stattdessen 'gemini-2.0-flash' oder 'gemini-2.0-flash-lite' auswählen und neu verbinden.";
+      return "Dieses Gemini-Modell ist für neu angelegte API-Keys gesperrt. Bitte im Dropdown stattdessen 'gemini-3.8-flash' auswählen und neu verbinden.";
     }
-    return "Google kennt dieses Modell nicht (mehr). Bitte ein anderes aus der Liste wählen.";
+    return "Google kennt dieses Modell nicht (mehr). Bitte 'gemini-3.8-flash' aus der Liste wählen – das ist aktuell das empfohlene kostenlose Modell.";
   }
   if (status === 400) {
     return "Anfrage wurde von Google abgelehnt. Vielleicht ist das Modell für deinen Account nicht freigeschaltet.";
@@ -256,7 +269,9 @@ export class GeminiModel {
     // Auto-Fallback für Google-seitig gesperrte Namen. Alte Dropdown-Werte
     // aus einem gecachten Browser-State sollen die Verbindung nicht brechen.
     const blockedAliases = {
-      "gemini-2.5-flash": "gemini-2.0-flash"
+      "gemini-2.5-flash": "gemini-3.8-flash",
+      "gemini-2.0-flash": "gemini-3.8-flash",
+      "gemini-2.0-flash-lite": "gemini-3.5-flash-lite"
     };
     const requested = modelId;
     if (blockedAliases[modelId]) {
