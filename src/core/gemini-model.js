@@ -195,39 +195,51 @@ export class GeminiModel {
 
     if (!this.apiKey) return fallback;
 
+    let fetched = [];
     try {
       const response = await fetch(
         `${GEMINI_API_BASE}?key=${encodeURIComponent(this.apiKey)}`,
         { method: "GET" }
       );
 
-      if (!response.ok) return fallback;
+      if (response.ok) {
+        const data = await response.json();
+        const list = Array.isArray(data?.models) ? data.models : [];
 
-      const data = await response.json();
-      const list = Array.isArray(data?.models) ? data.models : [];
-
-      const usable = list
-        .filter(entry =>
-          Array.isArray(entry?.supportedGenerationMethods) &&
-          entry.supportedGenerationMethods.includes("generateContent")
-        )
-        .map(entry => ({
-          id: safeText(entry.name).replace(/^models\//, ""),
-          name: safeText(entry.displayName) || safeText(entry.name).replace(/^models\//, ""),
-          note: safeText(entry.description).split(/\.\s/)[0],
-          vram: null
-        }))
-        .filter(entry => isUsableModel(entry.id))
-        .sort((a, b) => {
-          const diff = rankModel(a.id) - rankModel(b.id);
-          return diff !== 0 ? diff : a.id.localeCompare(b.id);
-        });
-
-      return usable.length ? usable : fallback;
-
+        fetched = list
+          .filter(entry =>
+            Array.isArray(entry?.supportedGenerationMethods) &&
+            entry.supportedGenerationMethods.includes("generateContent")
+          )
+          .map(entry => ({
+            id: safeText(entry.name).replace(/^models\//, ""),
+            name: safeText(entry.displayName) || safeText(entry.name).replace(/^models\//, ""),
+            note: safeText(entry.description).split(/\.\s/)[0],
+            vram: null
+          }))
+          .filter(entry => isUsableModel(entry.id));
+      }
     } catch {
-      return fallback;
+      /* Netzfehler → wir bleiben bei Fallback allein */
     }
+
+    // Fallback-Modelle (gemini-2.0-flash etc.) kommen IMMER ins Dropdown,
+    // auch wenn Google sie dem Account nicht aktiv listet. Ohne diesen
+    // Merge hatte der User bei neu angelegten Keys nur die 2.5-Varianten
+    // zur Auswahl – und genau die sind serverseitig gesperrt.
+    const merged = [];
+    const seen = new Set();
+    for (const m of fallback) {
+      if (!seen.has(m.id)) { seen.add(m.id); merged.push(m); }
+    }
+    for (const m of fetched) {
+      if (!seen.has(m.id)) { seen.add(m.id); merged.push(m); }
+    }
+
+    return merged.sort((a, b) => {
+      const diff = rankModel(a.id) - rankModel(b.id);
+      return diff !== 0 ? diff : a.id.localeCompare(b.id);
+    });
   }
 
   async load(modelId, onProgress = () => {}) {
