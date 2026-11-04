@@ -241,6 +241,20 @@ export class GeminiModel {
       throw new Error("Bitte zuerst ein Gemini-Modell auswählen.");
     }
 
+    // Auto-Fallback für Google-seitig gesperrte Namen. Alte Dropdown-Werte
+    // aus einem gecachten Browser-State sollen die Verbindung nicht brechen.
+    const blockedAliases = {
+      "gemini-2.5-flash": "gemini-2.0-flash"
+    };
+    const requested = modelId;
+    if (blockedAliases[modelId]) {
+      modelId = blockedAliases[modelId];
+      onProgress({
+        progress: 15,
+        text: `${requested} ist für neue API-Keys gesperrt – weiche auf ${modelId} aus ...`
+      });
+    }
+
     this.loading = true;
     this.progress = 10;
     this.status = "loading";

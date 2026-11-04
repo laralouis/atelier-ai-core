@@ -11,10 +11,10 @@
  *   Übung baut – lieber eine imperfekte Karte als eine Fehlermeldung.
  */
 
-import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zx";
-import { knowledgeBase } from "./knowledge.js?v=20261103zx";
+import { atelierAI, getSubjectLanguage } from "./ai.js?v=20261103zy";
+import { knowledgeBase } from "./knowledge.js?v=20261103zy";
 
-const BUILD = "20261103zx";
+const BUILD = "20261103zy";
 
 function pickLang(language) {
   if (language === "en" || language === "es") return language;
