@@ -1,13 +1,18 @@
+
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#F7F5F0">
-<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>ATELIER AI – Learning Space</title>
+
+
+
+
+
+
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -261,7 +266,7 @@ h2{font-size:32px}
       </div>
     </div>
     <div class="field"><label for="topic">Thema oder Lerngebiet</label><input id="topic" placeholder="z. B. Zellatmung oder Integralrechnung"></div>
-    <div class="field"><label for="count">Anzahl der Übungen</label><select id="count"><option value="3">3 Übungen</option><option value="5" selected>5 Übungen</option><option value="8">8 Übungen</option><option value="10">10 Übungen</option></select></div>
+    <div class="field"><label for="count">Anzahl der Übungen</label><select id="count"><option value="3">3 Übungen</option><option value="5">5 Übungen</option><option value="8" selected>8 Übungen</option><option value="10">10 Übungen</option><option value="12">12 Übungen</option></select></div>
     <div class="field"><label><input type="checkbox" id="useMaterials" checked style="width:auto"> Eigene Unterrichtsmaterialien berücksichtigen</label></div>
     <button class="button" id="generate">Lernübungen erstellen</button>
     <div id="generationStatus" class="status">Wähle ein Format und gib dein Thema ein.</div>
@@ -379,15 +384,15 @@ h2{font-size:32px}
       </div>
       <div class="field"><label for="examType">Prüfungsformat</label>
         <select id="examType">
-          <option value="abitur">Bayerisches Abitur (mit Teilaufgaben a/b/c)</option>
-          <option value="klausur">Klausuraufgabe (eine große Aufgabe)</option>
-          <option value="wissen">Wissensfragen (offene Kurzfragen)</option>
-          <option value="analyse">Analyse / Interpretation (textgebunden)</option>
-          <option value="transfer">Transferaufgaben (anwenden &amp; beurteilen)</option>
+          <option value="gemischt">Gemischte Prüfung</option>
+          <option value="wissen">Wissensfragen</option>
+          <option value="analyse">Analyse und Interpretation</option>
+          <option value="transfer">Transferaufgaben</option>
+          <option value="klausur">Klausuraufgaben</option>
         </select>
       </div>
       <div class="field"><label for="examCount">Anzahl der Aufgaben</label>
-        <select id="examCount"><option value="2">2 Aufgaben</option><option value="3" selected>3 Aufgaben</option><option value="4">4 Aufgaben</option></select>
+        <select id="examCount"><option value="3">3 Aufgaben</option><option value="5" selected>5 Aufgaben</option><option value="8">8 Aufgaben</option></select>
       </div>
     </div>
 
@@ -459,7 +464,7 @@ h2{font-size:32px}
     <div class="field" style="margin-top:18px"><label for="draftText">Dein Text</label><textarea id="draftText" style="min-height:220px" placeholder="Beginne hier mit deinem Text ..."></textarea></div>
     <div class="button-row">
       <button class="button" id="reviewDraft">Text analysieren</button>
-      <button class="button secondary" id="improveDraft">Grammatik &amp; Rechtschreibung prüfen</button>
+      <button class="button secondary" id="improveDraft">Überarbeitungsvorschläge</button>
     </div>
     <div id="reviewStatus" class="status">Dein Text bleibt zunächst in diesem Browser.</div>
     <div id="reviewResult" class="result-text hidden"></div>
@@ -479,7 +484,7 @@ h2{font-size:32px}
     <div class="field"><label for="materialSubject">Schulfach</label><select id="materialSubject">
       <option>Mathematik</option><option>Deutsch</option><option>Geographie</option><option>Chemie</option><option>Musik</option><option>Sport</option><option>Spanisch</option><option>Englisch</option><option>Evangelische Religion</option><option>Biologie</option><option>Politik und Gesellschaft</option><option>Geschichte</option>
     </select></div>
-    <div class="field"><label for="materialFile">Datei auswählen (PDF, TXT, Foto/Bild)</label><input type="file" id="materialFile" accept=".pdf,.txt,.jpg,.jpeg,.png,.webp,.bmp,.gif,.heic,application/pdf,text/plain,image/*"></div>
+    <div class="field"><label for="materialFile">Datei auswählen</label><input type="file" id="materialFile" accept=".pdf,.txt,application/pdf,text/plain"></div>
     <button class="button" id="importMaterial">Material importieren</button>
     <div id="materialStatus" class="status">Noch keine Datei importiert.</div>
   </div>
@@ -492,80 +497,27 @@ h2{font-size:32px}
 <!-- KI-MODELL -->
 <section id="page-model" class="hidden">
   <div class="hero">
-    <p class="eyebrow">KI-Anbieter</p>
-    <h1>Dein Modell, <em>deine Wahl.</em></h1>
-    <p class="intro">Entweder lokal im Browser (WebLLM, alles bleibt auf dem Gerät) oder über die kostenlose Gemini-API von Google (schneller, dafür gehen deine Anfragen an Google).</p>
+    <p class="eyebrow">Lokale KI</p>
+    <h1>Dein Modell, <em>deine Kontrolle.</em></h1>
+    <p class="intro">ATELIER AI verarbeitet deine Lernanfragen lokal über WebLLM und WebGPU.</p>
   </div>
+  <div class="panel"><p class="eyebrow">Gerätestatus</p><h2>WebGPU</h2><div id="gpuStatus" class="status">WebGPU wird geprüft ...</div></div>
   <div class="panel">
-    <p class="eyebrow">Anbieter wählen</p>
-    <h2>Lokal oder Gemini?</h2>
-    <div class="field" style="margin-top:16px">
-      <label><input type="radio" name="providerChoice" value="local" id="providerLocal"> Lokal (WebLLM, läuft auf deinem Gerät)</label>
+    <p class="eyebrow">Modellverwaltung</p><h2>Lokales KI-Modell</h2>
+    <div class="field" style="margin-top:20px"><label for="model">KI-Modell auswählen</label><select id="model" disabled><option value="">Modellliste noch nicht geladen</option></select></div>
+    <div class="button-row">
+      <button id="loadModels" class="button secondary">Modelle suchen</button>
+      <button id="loadModel" class="button" disabled>Modell laden</button>
+      <button id="unloadModel" class="button secondary" disabled>Entladen</button>
     </div>
-    <div class="field">
-      <label><input type="radio" name="providerChoice" value="gemini" id="providerGemini"> Gemini (Google-Cloud, kostenloses Kontingent)</label>
-    </div>
-    <div id="providerStatus" class="status">Wähle einen Anbieter.</div>
-  </div>
-
-  <div id="localModelPanel">
-    <div class="panel"><p class="eyebrow">Gerätestatus</p><h2>WebGPU</h2><div id="gpuStatus" class="status">WebGPU wird geprüft ...</div></div>
-    <div class="panel">
-      <p class="eyebrow">Modellverwaltung</p><h2>Lokales KI-Modell</h2>
-      <div class="field" style="margin-top:20px"><label for="model">KI-Modell auswählen</label><select id="model" disabled><option value="">Modellliste noch nicht geladen</option></select></div>
-      <div class="button-row">
-        <button id="loadModels" class="button secondary">Modelle suchen</button>
-        <button id="loadModel" class="button" disabled>Modell laden</button>
-        <button id="unloadModel" class="button secondary" disabled>Entladen</button>
-      </div>
-      <progress id="progress" value="0" max="100" style="width:100%;margin-top:20px"></progress>
-      <div id="modelStatus" class="status">Noch kein Modell geladen.</div>
-    </div>
-  </div>
-
-  <div id="geminiModelPanel" class="hidden">
-    <div class="panel">
-      <p class="eyebrow">Datenschutz-Hinweis</p>
-      <h2>Was passiert bei Gemini?</h2>
-      <p class="muted" style="margin-top:12px">
-        Wenn du Gemini auswählst, verlassen deine Fragen und importierten Materialien dein Gerät und werden an die Google-Server übertragen. Google kann diese Daten laut eigener Richtlinie zu Verbesserungszwecken verwenden. Nutze diese Option nur, wenn du damit einverstanden bist. Trage keine sensiblen persönlichen Daten ein.
-      </p>
-      <p class="muted">
-        Einen kostenlosen API-Key bekommst du unter <strong>aistudio.google.com/app/apikey</strong>. Der Key wird nur lokal in deinem Browser gespeichert.
-      </p>
-    </div>
-    <div class="panel">
-      <p class="eyebrow">Zugang</p>
-      <h2>Gemini API-Key</h2>
-      <div class="field" style="margin-top:20px">
-        <label for="geminiKey">API-Key</label>
-        <input type="password" id="geminiKey" placeholder="AIza... (wird nur in diesem Browser gespeichert)">
-      </div>
-      <div class="button-row">
-        <button id="saveGeminiKey" class="button">Key speichern</button>
-        <button id="clearGeminiKey" class="button secondary">Key löschen</button>
-      </div>
-      <div id="geminiKeyStatus" class="status">Noch kein Gemini-Key hinterlegt.</div>
-    </div>
-    <div class="panel">
-      <p class="eyebrow">Modellverwaltung</p><h2>Gemini-Modell</h2>
-      <div class="field" style="margin-top:20px">
-        <label for="geminiModelSelect">Gemini-Modell auswählen</label>
-        <select id="geminiModelSelect" disabled><option value="">Zuerst Key speichern</option></select>
-      </div>
-      <div class="button-row">
-        <button id="connectGemini" class="button" disabled>Verbinden</button>
-        <button id="disconnectGemini" class="button secondary" disabled>Trennen</button>
-      </div>
-      <progress id="geminiProgress" value="0" max="100" style="width:100%;margin-top:20px"></progress>
-      <div id="geminiModelStatus" class="status">Noch kein Gemini-Modell verbunden.</div>
-    </div>
+    <progress id="progress" value="0" max="100" style="width:100%;margin-top:20px"></progress>
+    <div id="modelStatus" class="status">Noch kein Modell geladen.</div>
   </div>
 </section>
 
 </main>
 
-<footer><div class="shell">ATELIER AI · Independent Learning Space · Gymnasium Bayern · <span id="versionTag" style="opacity:.6"></span></div></footer>
+<footer><div class="shell">ATELIER AI · Independent Learning Space · Gymnasium Bayern</div></footer>
 
 <!-- Unabhängige Navigation -->
 <script>
@@ -601,26 +553,6 @@ window.addEventListener("unhandledrejection",event=>{
   errorDisplay.textContent="Modulfehler: "+String(event.reason);
 });
 
-// Persistenten Speicher anfordern. Ohne diesen Schritt gibt Safari auf
-// unbekannten Domains (z.B. frische Cloudflare-Tunnel-URLs) nur einen
-// Mini-Quota frei, und WebLLM scheitert beim Schreiben des Modells.
-(async()=>{
-  try{
-    if(navigator.storage&&navigator.storage.persist){
-      const granted=await navigator.storage.persist();
-      console.log("ATELIER AI – persistenter Speicher:",granted?"gewährt":"abgelehnt");
-      if(navigator.storage.estimate){
-        const{quota,usage}=await navigator.storage.estimate();
-        console.log("ATELIER AI – Speicher-Quota:",
-          quota?(quota/1024/1024/1024).toFixed(2)+" GB":"unbekannt",
-          "– belegt:",usage?(usage/1024/1024).toFixed(0)+" MB":"0 MB");
-      }
-    }
-  }catch(error){
-    console.warn("ATELIER AI – Speicherabfrage fehlgeschlagen:",error);
-  }
-})();
-
 const subjects=[
   "Mathematik","Deutsch","Geographie","Chemie","Musik","Sport",
   "Spanisch","Englisch","Evangelische Religion","Biologie",
@@ -655,12 +587,7 @@ async function safeImport(name,path){
   }
 }
 
-const ATELIER_VERSION = "20261103zy-" + Date.now();
-
-(() => {
-  const tag = document.getElementById("versionTag");
-  if (tag) tag.textContent = "v " + ATELIER_VERSION;
-})();
+const ATELIER_VERSION = "20261103d";
 
 const [aiModule,learningModule,importerModule,knowledgeModule]=await Promise.all([
   safeImport("KI-Modul",`./src/core/ai.js?v=${ATELIER_VERSION}`),
@@ -682,16 +609,13 @@ if(moduleErrors.length){
     moduleErrors.join(" | ");
 }
 
-async function askAI({subject,mode,question,level="mittel",materials=true,history=[],searchQuery=null,longForm=false}){
+async function askAI({subject,mode,question,level="mittel",materials=true,history=[],searchQuery=null}){
   if(!atelierAI){
     throw new Error("Das KI-Modul konnte nicht geladen werden. Prüfe src/core/ai.js.");
   }
 
-  const aiStatus=atelierAI.getStatus();
-  if(!aiStatus.active.ready){
-    throw new Error(aiStatus.providerType==="gemini"
-      ?"Bitte zuerst unter KI-Modell einen Gemini-Zugang verbinden."
-      :"Bitte zuerst unter KI-Modell ein lokales Modell laden.");
+  if(!atelierAI.getStatus().localModel.ready){
+    throw new Error("Bitte zuerst unter KI-Modell ein lokales Modell laden.");
   }
 
   const materialQuery=typeof searchQuery==="string"&&searchQuery.trim()
@@ -705,10 +629,6 @@ async function askAI({subject,mode,question,level="mittel",materials=true,histor
   const request=atelierAI.createRequest({
     subject,mode,question,materials:context,history,grade:12,level
   });
-
-  if(longForm){
-    request.metadata.longForm=true;
-  }
 
   const response=await atelierAI.ask(request);
 
@@ -836,16 +756,8 @@ $("askTutor").addEventListener("click", async () => {
     );
 
   } catch (error) {
-    // Bei einem Fehler die orphaned User-Nachricht aus dem Verlauf nehmen,
-    // sonst wird sie als „unanswered turn" an das Modell weitergereicht und
-    // der nächste Prompt wirkt für die KI zusammenhanglos. Den Fragetext
-    // ins Eingabefeld zurückschreiben, damit die Schülerin bequem retryt.
-    if (tutorConversation[tutorConversation.length - 1]?.role === "user") {
-      tutorConversation.pop();
-      renderTutorChat();
-    }
-    $("tutorQuestion").value = question;
-
+    // Bei einem Fehler bleibt die Nachricht im Verlauf.
+    // Sie kann nach Behebung des Fehlers erneut gesendet werden.
     setStatus(
       "tutorStatus",
       "Fehler: " + error.message,
@@ -953,12 +865,7 @@ $("generate").addEventListener("click",async()=>{
       topic,
       count:Number($("count").value),
       level:$("level").value,
-      useMaterials:$("useMaterials").checked,
-      onProgress:report=>{
-        if(report&&report.note){
-          setStatus("generationStatus",report.note);
-        }
-      }
+      useMaterials:$("useMaterials").checked
     });
 
     if(!currentSet||!Array.isArray(currentSet.items)||!currentSet.items.length){
@@ -970,25 +877,10 @@ $("generate").addEventListener("click",async()=>{
     selectedAnswers={};
     completed={};
 
-    const externalName=currentSet.externalSourceType==="academic"
-      ?"OpenAlex-Fachliteratur"
-      :(currentSet.externalSourceType==="encyclopedia"?"Wikipedia":"externe Quelle");
-    const parts=[];
-    if(currentSet.materialCount>0){
-      parts.push(`${currentSet.materialCount} eigene Materialien`);
-    }
-    if(currentSet.usedExternalSource){
-      parts.push(externalName);
-    }
-    const sourceNote=parts.length
-      ?" Grundlage: "+parts.join(" + ")+"."
-      :" Ohne Materialien (eigenes Fachwissen des Modells).";
-    const failureNote=currentSet.failures&&currentSet.failures.length
-      ?` ${currentSet.failures.length} von ${currentSet.requested||currentSet.items.length} Versuchen übersprungen.`
-      :"";
     setStatus(
       "generationStatus",
-      currentSet.items.length+" Übungen erstellt."+sourceNote+failureNote,
+      currentSet.items.length+" Übungen erstellt. "+
+      (currentSet.materialCount||0)+" Materialien berücksichtigt.",
       "success"
     );
 
@@ -1145,15 +1037,8 @@ function renderCloze(item,area){
 
       input.disabled=Boolean(completed[currentIndex]);
 
-      input.value=selectedAnswers[currentIndex]?.[index]||"";
-
-      if(!completed[currentIndex]){
-        input.addEventListener("input",()=>{
-          if(!Array.isArray(selectedAnswers[currentIndex])){
-            selectedAnswers[currentIndex]=[];
-          }
-          selectedAnswers[currentIndex][index]=input.value;
-        });
+      if(completed[currentIndex]){
+        input.value=selectedAnswers[currentIndex]?.[index]||"";
       }
 
       inputs.push(input);
@@ -1239,59 +1124,6 @@ let examIndex=0;
 let examAnswers={};
 let examFinished=false;
 
-const ABITUR_FORMAT_HINT={
-  abitur:`Nutze das STRUKTURFORMAT des bayerischen Abiturs mit Teilaufgaben:
-- Jede Aufgabe hat EINEN Materialbezug (kurzer Textausschnitt, Grafikbeschreibung, Formel oder Quellenangabe – 1–2 Sätze; "fiktiv erstellt" markieren, wenn du keine Quelle hast).
-- 3 Teilaufgaben a) b) c), die aufeinander aufbauen: a) Anforderungsbereich I (Reproduktion), b) AFB II (Reorganisation/Analyse), c) AFB III (Transfer/Beurteilung).
-- Verwende exakt bayerische Operatoren (z. B. 'Beschreiben Sie', 'Erläutern Sie', 'Erklären Sie', 'Analysieren Sie', 'Vergleichen Sie', 'Charakterisieren Sie', 'Interpretieren Sie', 'Erörtern Sie', 'Beurteilen Sie', 'Bewerten Sie', 'Nehmen Sie Stellung zu', 'Entwerfen Sie').
-- BE-Punkte vergeben: a) 4–6 BE, b) 7–10 BE, c) 8–12 BE. Gesamtsumme pro Aufgabe realistisch (20–30 BE).`,
-  klausur:`Nutze das Format einer bayerischen Klausuraufgabe: 2–3 Teilaufgaben mit bayerischen Operatoren und BE-Punkten.`,
-  wissen:`Nutze kurze, offene Wissensfragen (eine Teilaufgabe pro Aufgabe). BE-Punkte angeben (3–6 BE). Operatoren: 'Nennen Sie', 'Beschreiben Sie', 'Erklären Sie'.`,
-  analyse:`Nutze textgebundene Analyse-/Interpretationsaufgaben mit 2–3 Teilaufgaben (Beschreibung → Analyse → Deutung/Beurteilung).`,
-  transfer:`Nutze Transferaufgaben mit 2 Teilaufgaben (Analyse → Transfer/Beurteilung). Bayerische Operatoren wie 'Übertragen Sie', 'Beurteilen Sie', 'Entwerfen Sie'.`
-};
-
-function normalizeExamSet(raw){
-  const list=Array.isArray(raw)?raw:[];
-
-  return list.map(item=>{
-    if(!item||typeof item!=="object") return null;
-
-    const intro=typeof item.intro==="string"?item.intro.trim()
-      :typeof item.material==="string"?item.material.trim()
-      :"";
-
-    const criteria=typeof item.criteria==="string"?item.criteria.trim()
-      :typeof item.erwartungshorizont==="string"?item.erwartungshorizont.trim()
-      :"";
-
-    let parts=[];
-
-    if(Array.isArray(item.parts)&&item.parts.length){
-      parts=item.parts.map((part,i)=>{
-        if(!part||typeof part!=="object") return null;
-        const task=String(part.task||part.question||part.aufgabe||"").trim();
-        if(!task) return null;
-        const label=String(part.label||String.fromCharCode(97+i)+")").trim();
-        const operator=String(part.operator||"").trim();
-        const points=Number(part.points||part.be||part.punkte||0)||0;
-        const afb=String(part.afb||part.anforderungsbereich||"").trim();
-        return {label,operator,task,points,afb};
-      }).filter(Boolean);
-    }
-
-    if(!parts.length){
-      const task=String(item.question||item.task||item.aufgabe||"").trim();
-      if(!task) return null;
-      parts=[{label:"",operator:"",task,points:Number(item.points||0)||0,afb:""}];
-    }
-
-    const totalPoints=parts.reduce((sum,p)=>sum+(p.points||0),0);
-
-    return {intro,parts,totalPoints,criteria};
-  }).filter(Boolean);
-}
-
 $("createExam").addEventListener("click",async()=>{
   const topic=$("examTopic").value.trim();
 
@@ -1314,45 +1146,18 @@ $("createExam").addEventListener("click",async()=>{
     const count=Number($("examCount").value);
     const level=$("examLevel").value;
 
-    const formatHint=ABITUR_FORMAT_HINT[type]||ABITUR_FORMAT_HINT.abitur;
-
-    const prompt=`Erstelle eine Probeprüfung im Stil des BAYERISCHEN ABITURS (ISB-Operatorkatalog) für die gymnasiale Oberstufe.
-Fach: ${subject}. Thema: ${topic}. Niveau: ${level}.
-
-${formatHint}
-
-STRENGE Regeln:
-- Jede Aufgabe behandelt AUSSCHLIESSLICH das Thema "${topic}". Keine Abweichung.
-- Niveau "${level}" bestimmt den Anspruch der Teilaufgaben (grundlegend = enger Themenausschnitt, Grundwissen; mittel = Vernetzung; anspruchsvoll = Transfer und Bewertung).
-- JEDE Teilaufgabe beginnt mit einem bayerischen Operator wie oben.
-- Keine Musterlösung in der Aufgabenstellung verraten – nur im Erwartungshorizont.
-- Erwartungshorizont: 2–4 Stichpunkte, was eine Oberstufenschülerin fachlich benennen muss, um volle Punktzahl zu bekommen.
-
-Erstelle GENAU ${count} Aufgaben.
-
-Antworte AUSSCHLIESSLICH mit einem JSON-Objekt in GENAU diesem Format – kein Markdown, keine Codeblöcke, keine Einleitung:
-
-{
-  "questions": [
-    {
-      "intro": "Materialbezug: kurzer Text / Grafikbeschreibung / Formel (1-2 Sätze). Falls fiktiv: '(fiktives Material)' anhängen.",
-      "parts": [
-        {"label": "a)", "operator": "Beschreiben Sie", "task": "...", "points": 5, "afb": "I"},
-        {"label": "b)", "operator": "Erläutern Sie", "task": "...", "points": 8, "afb": "II"},
-        {"label": "c)", "operator": "Beurteilen Sie", "task": "...", "points": 10, "afb": "III"}
-      ],
-      "criteria": "Erwartungshorizont: zu a) Stichpunkt 1; zu b) Stichpunkt 2; zu c) Stichpunkt 3."
-    }
-  ]
-}`;
+    const prompt=`Erstelle eine Probeprüfung für die gymnasiale Oberstufe in Bayern.
+Fach: ${subject}. Thema: ${topic}. Prüfungsformat: ${type}. Niveau: ${level}.
+Erstelle genau ${count} offene, fachlich anspruchsvolle Aufgaben.
+Gib ausschließlich ein JSON-Objekt im Format {"questions":[{"question":"Aufgabenstellung","criteria":"Erwartungshorizont und wichtige Bewertungskriterien"}]} zurück.
+Keine Musterlösungen direkt in den Aufgaben anzeigen.`;
 
     const response=await askAI({
       subject,
       mode:"quiz",
       question:prompt,
       level,
-      materials:$("examMaterials").checked,
-      longForm:true
+      materials:$("examMaterials").checked
     });
 
     const match=response.match(/\{[\s\S]*\}/);
@@ -1361,30 +1166,20 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Objekt in GENAU diesem Format – kein M
       throw new Error("Die KI hat kein gültiges Aufgabenformat geliefert.");
     }
 
-    let data;
-    try{
-      data=JSON.parse(match[0]);
-    }catch(e){
-      throw new Error("Das JSON der KI war fehlerhaft: "+e.message);
-    }
+    const data=JSON.parse(match[0]);
 
-    const normalized=normalizeExamSet(data.questions);
-
-    if(!normalized.length){
+    if(!Array.isArray(data.questions)||!data.questions.length){
       throw new Error("Es wurden keine Aufgaben erstellt.");
     }
 
-    examSet=normalized;
+    examSet=data.questions;
     examIndex=0;
     examAnswers={};
     examFinished=false;
 
     $("examArea").classList.remove("hidden");
     $("examHeading").textContent=subject+" · "+topic;
-    // examResult sauber in den Pill-Zustand zurücksetzen – nach einer
-    // vorherigen Auswertung steht die Klasse evtl. noch auf result-text.
-    $("examResult").className="status hidden";
-    $("examResult").textContent="";
+    $("examResult").classList.add("hidden");
     $("examNext").disabled=false;
 
     renderExam();
@@ -1428,60 +1223,20 @@ function renderExam(){
 
   const item=examSet[examIndex];
 
-  const header=document.createElement("div");
-  header.className="exercise-question";
-  const pointsSuffix=item.totalPoints
-    ?" ("+item.totalPoints+" BE)"
-    :"";
-  header.textContent="Aufgabe "+(examIndex+1)+pointsSuffix;
-  area.append(header);
+  const title=document.createElement("div");
+  title.className="exercise-question";
+  title.textContent="Aufgabe "+(examIndex+1)+": "+item.question;
 
-  if(item.intro){
-    const intro=document.createElement("div");
-    intro.className="muted";
-    intro.style.cssText="margin:8px 0 14px;padding:10px 14px;border-left:3px solid #D9CFBF;background:#FBFAF7;border-radius:0 8px 8px 0";
-    intro.textContent=item.intro;
-    area.append(intro);
-  }
+  const input=document.createElement("textarea");
+  input.style.minHeight="180px";
+  input.placeholder="Deine Antwort ...";
+  input.value=examAnswers[examIndex]||"";
 
-  if(!examAnswers[examIndex]||typeof examAnswers[examIndex]!=="object"){
-    examAnswers[examIndex]={};
-  }
-
-  item.parts.forEach((part,partIndex)=>{
-    const key=part.label||("part"+partIndex);
-
-    const partHead=document.createElement("div");
-    partHead.style.cssText="margin:14px 0 6px;font-weight:600";
-
-    const labelText=(part.label?part.label+" ":"")
-      +(part.operator?part.operator+" ":"")
-      +part.task;
-    partHead.textContent=labelText;
-    area.append(partHead);
-
-    if(part.points||part.afb){
-      const meta=document.createElement("div");
-      meta.className="muted";
-      meta.style.cssText="margin:0 0 8px;font-size:0.9em";
-      const parts=[];
-      if(part.points) parts.push(part.points+" BE");
-      if(part.afb) parts.push("AFB "+part.afb);
-      meta.textContent=parts.join(" · ");
-      area.append(meta);
-    }
-
-    const input=document.createElement("textarea");
-    input.style.minHeight="120px";
-    input.placeholder="Deine Antwort zu "+(part.label||"dieser Teilaufgabe")+" ...";
-    input.value=examAnswers[examIndex][key]||"";
-
-    input.addEventListener("input",()=>{
-      examAnswers[examIndex][key]=input.value;
-    });
-
-    area.append(input);
+  input.addEventListener("input",()=>{
+    examAnswers[examIndex]=input.value;
   });
+
+  area.append(title,input);
 }
 
 $("examPrevious").addEventListener("click",()=>{
@@ -1500,18 +1255,13 @@ $("examNext").addEventListener("click",async()=>{
     return;
   }
 
-  let unanswered=0;
-  examSet.forEach((item,index)=>{
-    const bag=examAnswers[index]||{};
-    item.parts.forEach((part,partIndex)=>{
-      const key=part.label||("part"+partIndex);
-      if(!(bag[key]||"").trim()) unanswered++;
-    });
-  });
+  const unanswered=examSet.filter((item,index)=>
+    !(examAnswers[index]||"").trim()
+  ).length;
 
   if(
     unanswered&&
-    !confirm(unanswered+" Teilaufgaben sind noch unbeantwortet. Prüfung trotzdem abgeben?")
+    !confirm(unanswered+" Aufgaben sind noch unbeantwortet. Prüfung trotzdem abgeben?")
   ){
     return;
   }
@@ -1525,54 +1275,32 @@ $("examNext").addEventListener("click",async()=>{
   try{
     const subject=$("examSubject").value;
 
-    const submission=examSet.map((item,index)=>{
-      const bag=examAnswers[index]||{};
-      const partsText=item.parts.map((part,partIndex)=>{
-        const key=part.label||("part"+partIndex);
-        const answer=(bag[key]||"").trim()||"(nicht beantwortet)";
-        const head=(part.label?part.label+" ":"")
-          +(part.operator?part.operator+" ":"")
-          +part.task
-          +(part.points?" ["+part.points+" BE]":"");
-        return `  ${head}\n  Antwort: ${answer}`;
-      }).join("\n\n");
-
-      return `Aufgabe ${index+1}${item.totalPoints?" ("+item.totalPoints+" BE)":""}:${item.intro?"\nMaterial: "+item.intro:""}\n${partsText}\nErwartungshorizont: ${item.criteria||"(nicht angegeben)"}`;
-    }).join("\n\n---\n\n");
+    const submission=examSet.map((item,index)=>
+      `Aufgabe ${index+1}: ${item.question}\nErwartungshorizont: ${item.criteria}\nAntwort: ${examAnswers[index]||"(nicht beantwortet)"}`
+    ).join("\n\n");
 
     const feedback=await askAI({
       subject,
       mode:"review",
       level:$("examLevel").value,
       materials:$("examMaterials").checked,
-      longForm:true,
       question:
-        "Werte diese Probeprüfung im Stil des bayerischen Abiturs aus. "+
-        "Gib für JEDE Teilaufgabe (a, b, c ...) separat fachliches Feedback: "+
-        "erkannte Stärken, konkrete Fehler, fehlende Aspekte des Erwartungshorizonts "+
-        "und einen konkreten Verbesserungsvorschlag. "+
-        "Vergib pro Teilaufgabe eine realistische BE-Punktzahl (unterhalb der maximalen BE, "+
-        "wenn Aspekte fehlen), summiere am Ende die erreichten BE und ordne sie grob "+
-        "einer bayerischen Notenpunktzahl (0-15) zu. "+
-        "Erfinde keine Punkte, wenn die Antwort leer ist.\n\n"+
+        "Werte diese Probeprüfung anhand des Erwartungshorizonts aus. "+
+        "Gib für jede Aufgabe fachliches Feedback, Stärken, Fehler, "+
+        "fehlende Aspekte und konkrete Verbesserungshinweise. "+
+        "Erfinde keine Punktzahl, wenn keine belastbare Bewertung möglich ist.\n\n"+
         submission
     });
 
-    // Für die (meist lange) Auswertung aus dem schmalen Status-Pill in
-    // einen result-text-Block wechseln, damit der Text lesbar umbricht.
-    $("examResult").className="result-text";
     showResult("examResult",feedback);
+    $("examResult").classList.add("status");
 
   }catch(error){
-    $("examResult").className="status";
     setStatus(
       "examResult",
       "Auswertung fehlgeschlagen: "+error.message,
       "error"
     );
-    // Nach Fehlschlag darf die Schülerin die Abgabe erneut auslösen.
-    examFinished=false;
-    $("examNext").disabled=false;
   }
 });
 
@@ -1634,125 +1362,6 @@ $("writingHelp").addEventListener("click",async()=>{
   }
 });
 
-function parseWritingReview(text){
-  const raw=String(text||"").trim();
-  if(!raw) return null;
-
-  const splitRe=/\n\s*(?:VERBESSERTER\s+TEXT|KORRIGIERTER\s+TEXT|CORRECTED\s+TEXT|TEXTO\s+CORREGIDO)\s*[:\-]?\s*\n/i;
-  const match=raw.split(splitRe);
-  if(match.length<2) return null;
-
-  const errorsBlock=match[0]
-    .replace(/^\s*(?:FEHLER|ERRORS|ERRORES)\s*[:\-]?\s*/i,"")
-    .trim();
-  const corrected=match.slice(1).join("\n").trim();
-
-  const errorLines=errorsBlock
-    .split(/\n(?=\s*(?:\d+\s*[.)]|[-*•])\s)/)
-    .map(line=>line.trim())
-    .filter(line=>line.length>0);
-
-  const errors=errorLines.map(line=>{
-    const cleaned=line.replace(/^\s*(?:\d+\s*[.)]|[-*•])\s*/,"").trim();
-    const parts=cleaned.split(/\s*\|\s*/);
-
-    const grab=(labelRe)=>{
-      const hit=parts.find(p=>labelRe.test(p));
-      return hit?hit.replace(labelRe,"").trim():"";
-    };
-
-    const quote=grab(/^\s*(?:Fehler|Stelle|Error|Fallo|Problema)\s*[:\-]\s*/i);
-    const explanation=grab(/^\s*(?:Erkl(?:ä|a)rung|Begr(?:ü|u)ndung|Explanation|Explicaci(?:ó|o)n)\s*[:\-]\s*/i);
-    const correction=grab(/^\s*(?:Korrektur|Besser|Verbesserung|Correction|Correcci(?:ó|o)n|Mejor)\s*[:\-]\s*/i);
-
-    if(quote||explanation||correction){
-      return {quote,explanation,correction,raw:cleaned};
-    }
-    return {quote:"",explanation:cleaned,correction:"",raw:cleaned};
-  }).filter(e=>e.raw);
-
-  return {errors,corrected};
-}
-
-function showWritingReview(id,parsed,fallback){
-  const target=$(id);
-  target.replaceChildren();
-  target.classList.remove("hidden");
-  target.style.whiteSpace="normal";
-
-  if(!parsed||(parsed.errors.length===0&&!parsed.corrected)){
-    target.style.whiteSpace="pre-wrap";
-    target.textContent=fallback||"";
-    return;
-  }
-
-  const errorsHead=document.createElement("h3");
-  errorsHead.textContent=parsed.errors.length
-    ?`Gefundene Fehler (${parsed.errors.length})`
-    :"Keine Fehler gefunden";
-  errorsHead.style.margin="0 0 10px";
-  target.append(errorsHead);
-
-  if(parsed.errors.length===0){
-    const none=document.createElement("p");
-    none.className="muted";
-    none.textContent="Die KI hat keine Grammatik- oder Rechtschreibfehler erkannt.";
-    target.append(none);
-  }else{
-    const list=document.createElement("ol");
-    list.style.paddingLeft="22px";
-    list.style.margin="0 0 18px";
-    parsed.errors.forEach(err=>{
-      const li=document.createElement("li");
-      li.style.marginBottom="10px";
-
-      if(err.quote){
-        const q=document.createElement("div");
-        q.innerHTML="<strong>Stelle:</strong> ";
-        const qText=document.createElement("em");
-        qText.textContent="„"+err.quote+"\"";
-        q.append(qText);
-        li.append(q);
-      }
-      if(err.explanation){
-        const ex=document.createElement("div");
-        ex.innerHTML="<strong>Erklärung:</strong> ";
-        ex.append(document.createTextNode(err.explanation));
-        li.append(ex);
-      }
-      if(err.correction){
-        const co=document.createElement("div");
-        co.innerHTML="<strong>Korrektur:</strong> ";
-        const coText=document.createElement("em");
-        coText.textContent="„"+err.correction+"\"";
-        co.append(coText);
-        li.append(co);
-      }
-      if(!err.quote&&!err.explanation&&!err.correction&&err.raw){
-        li.textContent=err.raw;
-      }
-      list.append(li);
-    });
-    target.append(list);
-  }
-
-  if(parsed.corrected){
-    const corrHead=document.createElement("h3");
-    corrHead.textContent="Verbesserter Text";
-    corrHead.style.margin="18px 0 10px";
-    target.append(corrHead);
-
-    const corrBody=document.createElement("div");
-    corrBody.style.whiteSpace="pre-wrap";
-    corrBody.style.background="#FFF";
-    corrBody.style.padding="14px";
-    corrBody.style.borderRadius="8px";
-    corrBody.style.border="1px solid #E8E3D9";
-    corrBody.textContent=parsed.corrected;
-    target.append(corrBody);
-  }
-}
-
 async function reviewText(improve){
   const draft=$("draftText").value.trim();
 
@@ -1765,32 +1374,13 @@ async function reviewText(improve){
   const type=$("writingType").value;
 
   const question=improve
-    ?`Du bist eine strenge, aufmerksame Deutschlehrkraft der Oberstufe. Prüfe den folgenden Entwurf vollständig auf Grammatik- und Rechtschreibfehler. Nenne JEDEN Fehler, auch kleine (Kommasetzung, Groß-/Kleinschreibung, falsche Flexion, Tempus, Kasus, Wortstellung).
-
-Antworte in GENAU diesem Format – keine Einleitung, kein Markdown, keine Codeblöcke:
-
-FEHLER:
-1. Fehler: „<genaue Textstelle aus dem Entwurf>" | Erklärung: <was ist falsch und warum> | Korrektur: „<richtige Formulierung>"
-2. Fehler: „<Textstelle>" | Erklärung: <...> | Korrektur: „<...>"
-(weiter nummerieren, bis alle Fehler erfasst sind. Wenn keine Fehler vorliegen: schreibe „keine")
-
-VERBESSERTER TEXT:
-<der komplette korrigierte Entwurf, die eigene Stimme und Gedankenführung der schreibenden Person bleiben erhalten, inhaltliche Aussagen werden NICHT verändert, nur sprachlich bereinigt>
-
-Textsorte: ${type}
-Entwurf:
-${draft}`
+    ?`Schlage konkrete Überarbeitungen für diesen Text vor. Erhalte die eigene Stimme der schreibenden Person. Erkläre, welche Stellen verbessert werden sollten, und gib beispielhafte Alternativformulierungen. Schreibe nicht ungefragt den gesamten Text neu.\nTextsorte: ${type}\nText:\n${draft}`
     :`Analysiere diesen Text fachlich und sprachlich. Prüfe Aufgabenbezug, Aufbau, Argumentation, Fachsprache, Belege, Kohärenz und sprachliche Richtigkeit. Nenne konkrete Stärken und Verbesserungsmöglichkeiten. Erfinde keine Note.\nTextsorte: ${type}\nText:\n${draft}`;
 
   const button=improve?"improveDraft":"reviewDraft";
 
   $(button).disabled=true;
-  setStatus(
-    "reviewStatus",
-    improve
-      ?"Der Entwurf wird auf Grammatik und Rechtschreibung geprüft ..."
-      :"Der Text wird analysiert ..."
-  );
+  setStatus("reviewStatus","Der Text wird analysiert ...");
 
   try{
     const result=await askAI({
@@ -1798,31 +1388,11 @@ ${draft}`
       mode:"review",
       level:$("writingLevel").value,
       materials:false,
-      question,
-      longForm:improve
+      question
     });
 
-    if(improve){
-      const parsed=parseWritingReview(result);
-      showWritingReview("reviewResult",parsed,result);
-      setStatus(
-        "reviewStatus",
-        parsed&&parsed.errors.length
-          ?`Prüfung abgeschlossen – ${parsed.errors.length} Fehler gefunden.`
-          :"Prüfung abgeschlossen.",
-        "success"
-      );
-    }else{
-      // showWritingReview setzt vorher evtl. inline-Styles und ersetzt den
-      // Inhalt mit DOM-Knoten. Für die Freitext-Analyse brauchen wir aber
-      // wieder das pure result-text-Styling mit textContent.
-      const target=$("reviewResult");
-      target.replaceChildren();
-      target.className="result-text";
-      target.style.whiteSpace="pre-wrap";
-      showResult("reviewResult",result);
-      setStatus("reviewStatus","Analyse abgeschlossen.","success");
-    }
+    showResult("reviewResult",result);
+    setStatus("reviewStatus","Analyse abgeschlossen.","success");
 
   }catch(error){
     setStatus("reviewStatus","Fehler: "+error.message,"error");
@@ -1845,13 +1415,8 @@ async function refreshMaterials(){
     return;
   }
 
-  // Subject einmal beim Start einfrieren – wenn die Schülerin während des
-  // asynchronen getAll das Dropdown wechselt, würde sonst das Ergebnis
-  // zum falschen Fach angezeigt.
-  const subject=$("materialSubject").value;
-
   try{
-    const materials=await knowledgeBase.getAll(subject);
+    const materials=await knowledgeBase.getAll($("materialSubject").value);
 
     if(!materials.length){
       list.textContent="Für dieses Fach sind noch keine Materialien gespeichert.";
@@ -1921,42 +1486,20 @@ $("importMaterial").addEventListener("click",async()=>{
   setStatus("materialStatus","Datei wird verarbeitet ...");
 
   try{
-    const material=await materialImporter.importFile(file,report=>{
-      if(!report)return;
-      if(report.phase==="pdf-text-progress"){
-        setStatus("materialStatus",
-          `Lese PDF-Text (Seite ${report.current}/${report.total}) ...`);
-      }else if(report.phase==="ocr-start"){
-        setStatus("materialStatus",
-          `Text wurde nicht direkt gefunden – starte Zeichenerkennung (OCR) für ${report.pages} Seite${report.pages===1?"":"n"} ...`);
-      }else if(report.phase==="ocr-page"){
-        setStatus("materialStatus",
-          `OCR Seite ${report.current}/${report.total} ...`);
-      }else if(report.phase==="ocr-progress"&&typeof report.percentage==="number"){
-        setStatus("materialStatus",
-          `OCR läuft (${report.percentage}%) ...`);
-      }else if(report.phase==="ocr-error"){
-        setStatus("materialStatus",
-          "OCR konnte nicht geladen werden – nur pdf.js-Text wird genutzt.","error");
-      }
-    });
+    const material=await materialImporter.importFile(file);
 
     await knowledgeBase.add({
       subject:$("materialSubject").value,
       title:material.title,
       content:material.content,
-      concepts:material.concepts||[],
-      summary:material.summary||"",
-      source:material.usedOCR?"Lokaler Dateiimport (OCR)":"Lokaler Dateiimport"
+      source:"Lokaler Dateiimport"
     });
 
     $("materialFile").value="";
 
     setStatus(
       "materialStatus",
-      material.usedOCR
-        ?"Material erfolgreich gespeichert (per OCR eingelesen). Bei handschriftlichem Text bitte Ergebnis stichprobenartig prüfen."
-        :"Material erfolgreich gespeichert.",
+      "Material erfolgreich gespeichert.",
       "success"
     );
 
@@ -1973,39 +1516,6 @@ $("importMaterial").addEventListener("click",async()=>{
   }
 });
 
-/* KI-ANBIETER: UMSCHALTUNG LOKAL / GEMINI */
-function applyProviderVisibility(){
-  const type=atelierAI?atelierAI.getStatus().providerType:"local";
-  const localPanel=$("localModelPanel");
-  const geminiPanel=$("geminiModelPanel");
-  if(type==="gemini"){
-    localPanel.classList.add("hidden");
-    geminiPanel.classList.remove("hidden");
-  }else{
-    localPanel.classList.remove("hidden");
-    geminiPanel.classList.add("hidden");
-  }
-  const radio=document.querySelector(`input[name="providerChoice"][value="${type}"]`);
-  if(radio)radio.checked=true;
-  setStatus(
-    "providerStatus",
-    type==="gemini"
-      ?"Aktiv: Gemini (Anfragen gehen an Google)."
-      :"Aktiv: Lokale KI (bleibt auf dem Gerät).",
-    "success"
-  );
-}
-
-document.querySelectorAll('input[name="providerChoice"]').forEach(radio=>{
-  radio.addEventListener("change",()=>{
-    if(!atelierAI)return;
-    atelierAI.setProvider(radio.value);
-    applyProviderVisibility();
-    updateModelButtons();
-    updateGeminiButtons();
-  });
-});
-
 /* LOKALES KI-MODELL */
 async function checkGPU(){
   if(!atelierAI){
@@ -2018,7 +1528,7 @@ async function checkGPU(){
   }
 
   try{
-    const result=await atelierAI.localModel.checkSupport();
+    const result=await atelierAI.checkSupport();
     setStatus(
       "gpuStatus",
       result.reason,
@@ -2038,7 +1548,7 @@ function updateModelButtons(){
     return;
   }
 
-  const status=atelierAI.localModel.getStatus();
+  const status=atelierAI.getStatus().localModel;
 
   $("loadModel").disabled=
     status.ready||status.loading||!$("model").value;
@@ -2062,7 +1572,7 @@ $("loadModels").addEventListener("click",async()=>{
   setStatus("modelStatus","Modellliste wird geladen ...");
 
   try{
-    const models=await atelierAI.localModel.getAvailableModels();
+    const models=await atelierAI.getAvailableModels();
     const select=$("model");
 
     select.replaceChildren();
@@ -2070,10 +1580,7 @@ $("loadModels").addEventListener("click",async()=>{
     models.forEach(model=>{
       const option=document.createElement("option");
       option.value=model.id;
-      const vramLabel=Number.isFinite(model.vram)
-        ?` – ${(model.vram/1024).toFixed(1)} GB VRAM`
-        :"";
-      option.textContent=model.name+vramLabel;
+      option.textContent=model.name;
       select.append(option);
     });
 
@@ -2111,7 +1618,7 @@ $("loadModel").addEventListener("click",async()=>{
   $("progress").value=0;
 
   try{
-    await atelierAI.localModel.load($("model").value,report=>{
+    await atelierAI.loadModel($("model").value,report=>{
       $("progress").value=report.progress;
 
       setStatus(
@@ -2142,7 +1649,7 @@ $("unloadModel").addEventListener("click",async()=>{
   $("unloadModel").disabled=true;
 
   try{
-    await atelierAI.localModel.unload();
+    await atelierAI.unloadModel();
     $("progress").value=0;
     setStatus("modelStatus","Modell entladen.");
   }catch(error){
@@ -2152,134 +1659,9 @@ $("unloadModel").addEventListener("click",async()=>{
   updateModelButtons();
 });
 
-/* GEMINI */
-function updateGeminiButtons(){
-  if(!atelierAI){
-    $("saveGeminiKey").disabled=true;
-    $("clearGeminiKey").disabled=true;
-    $("geminiModelSelect").disabled=true;
-    $("connectGemini").disabled=true;
-    $("disconnectGemini").disabled=true;
-    return;
-  }
-
-  const status=atelierAI.geminiModel.getStatus();
-  const hasKey=status.hasKey;
-
-  $("clearGeminiKey").disabled=!hasKey;
-  $("geminiModelSelect").disabled=!hasKey||status.ready||status.loading;
-  $("connectGemini").disabled=
-    !hasKey||status.ready||status.loading||!$("geminiModelSelect").value;
-  $("disconnectGemini").disabled=!status.ready;
-
-  if(hasKey&&!$("geminiKeyStatus").classList.contains("success")){
-    setStatus("geminiKeyStatus","Gemini-Key gespeichert.","success");
-  }
-
-  if(status.ready){
-    setStatus(
-      "geminiModelStatus",
-      "Gemini verbunden: "+status.model,
-      "success"
-    );
-  }
-}
-
-function populateGeminiModels(){
-  const select=$("geminiModelSelect");
-  select.replaceChildren();
-
-  if(!atelierAI){
-    const option=document.createElement("option");
-    option.value="";
-    option.textContent="KI-Modul nicht verfügbar";
-    select.append(option);
-    return;
-  }
-
-  atelierAI.geminiModel.getAvailableModels().then(models=>{
-    select.replaceChildren();
-    models.forEach(model=>{
-      const option=document.createElement("option");
-      option.value=model.id;
-      option.textContent=model.name+(model.note?` – ${model.note}`:"");
-      select.append(option);
-    });
-    updateGeminiButtons();
-  });
-}
-
-$("saveGeminiKey").addEventListener("click",()=>{
-  if(!atelierAI)return;
-  const key=$("geminiKey").value.trim();
-  if(!key){
-    setStatus("geminiKeyStatus","Bitte einen API-Key eintragen.","error");
-    return;
-  }
-  atelierAI.geminiModel.setApiKey(key);
-  $("geminiKey").value="";
-  setStatus("geminiKeyStatus","Gemini-Key gespeichert.","success");
-  populateGeminiModels();
-  updateGeminiButtons();
-});
-
-$("clearGeminiKey").addEventListener("click",()=>{
-  if(!atelierAI)return;
-  atelierAI.geminiModel.setApiKey("");
-  setStatus("geminiKeyStatus","Gemini-Key gelöscht.");
-  setStatus("geminiModelStatus","Noch kein Gemini-Modell verbunden.");
-  updateGeminiButtons();
-});
-
-$("geminiModelSelect").addEventListener("change",updateGeminiButtons);
-
-$("connectGemini").addEventListener("click",async()=>{
-  if(!atelierAI)return;
-
-  $("connectGemini").disabled=true;
-  $("geminiModelSelect").disabled=true;
-  setStatus("geminiModelStatus","Verbindung zu Gemini wird aufgebaut ...");
-  $("geminiProgress").value=0;
-
-  try{
-    await atelierAI.geminiModel.load($("geminiModelSelect").value,report=>{
-      $("geminiProgress").value=report.progress;
-      setStatus(
-        "geminiModelStatus",
-        report.text+" ("+report.progress+"%)"
-      );
-    });
-
-    setStatus("geminiModelStatus","Gemini erfolgreich verbunden.","success");
-  }catch(error){
-    setStatus("geminiModelStatus","Fehler: "+error.message,"error");
-  }finally{
-    updateGeminiButtons();
-  }
-});
-
-$("disconnectGemini").addEventListener("click",async()=>{
-  if(!atelierAI)return;
-
-  $("disconnectGemini").disabled=true;
-
-  try{
-    await atelierAI.geminiModel.unload();
-    $("geminiProgress").value=0;
-    setStatus("geminiModelStatus","Gemini-Verbindung getrennt.");
-  }catch(error){
-    setStatus("geminiModelStatus",error.message,"error");
-  }
-
-  updateGeminiButtons();
-});
-
 /* Initialisierung: jeder Bereich wird unabhängig vorbereitet */
-applyProviderVisibility();
 checkGPU();
 updateModelButtons();
-populateGeminiModels();
-updateGeminiButtons();
 refreshMaterials();
 
 </script>
