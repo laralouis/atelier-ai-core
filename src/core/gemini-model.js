@@ -11,15 +11,13 @@
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const STORAGE_KEY = "atelier_gemini_key";
 
+// Fallback-Liste, falls kein Key gespeichert ist oder die Model-Listing-API
+// nicht erreichbar ist. gemini-2.5-flash steht hier bewusst NICHT mehr drin,
+// weil Google den Namen für frisch angelegte Projekte gesperrt hat.
 const AVAILABLE_MODELS = [
   {
-    id: "gemini-2.5-flash",
-    name: "Gemini 2.5 Flash (empfohlen)",
-    note: "Neuestes kostenloses Modell, sehr gute Qualität"
-  },
-  {
     id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
+    name: "Gemini 2.0 Flash (empfohlen)",
     note: "Stabil, schnell, zuverlässig"
   },
   {
@@ -28,6 +26,24 @@ const AVAILABLE_MODELS = [
     note: "Am schnellsten, etwas einfacher"
   }
 ];
+
+// Bevorzugte Sortierreihenfolge im Dropdown. Niedriger = weiter oben.
+function rankModel(id) {
+  if (/flash-lite/.test(id)) return 2;
+  if (/2\.0-flash(?!-lite)/.test(id)) return 1;
+  if (/2\.5-flash/.test(id)) return 3;
+  if (/pro/.test(id)) return 4;
+  return 9;
+}
+
+// Modelle rausfiltern, die für den Chat-Flow ungeeignet sind (Embeddings,
+// Bild-/Vision-Tuning, experimentelle / "latest"-Platzhalter).
+function isUsableModel(id) {
+  if (!id) return false;
+  if (/embedding|embed|aqa|image-generation|imagen|tts|vision-tuning|tuning/i.test(id)) return false;
+  if (/-exp(-|$)|preview|latest/i.test(id)) return false;
+  return true;
+}
 
 const MAX_OUTPUT_TOKENS = 1500;
 const MAX_OUTPUT_TOKENS_QUIZ = 2000;
@@ -160,12 +176,48 @@ export class GeminiModel {
   }
 
   async getAvailableModels() {
-    return AVAILABLE_MODELS.map(model => ({
+    const fallback = AVAILABLE_MODELS.map(model => ({
       id: model.id,
       name: model.name,
       vram: null,
       note: model.note
     }));
+
+    if (!this.apiKey) return fallback;
+
+    try {
+      const response = await fetch(
+        `${GEMINI_API_BASE}?key=${encodeURIComponent(this.apiKey)}`,
+        { method: "GET" }
+      );
+
+      if (!response.ok) return fallback;
+
+      const data = await response.json();
+      const list = Array.isArray(data?.models) ? data.models : [];
+
+      const usable = list
+        .filter(entry =>
+          Array.isArray(entry?.supportedGenerationMethods) &&
+          entry.supportedGenerationMethods.includes("generateContent")
+        )
+        .map(entry => ({
+          id: safeText(entry.name).replace(/^models\//, ""),
+          name: safeText(entry.displayName) || safeText(entry.name).replace(/^models\//, ""),
+          note: safeText(entry.description).split(/\.\s/)[0],
+          vram: null
+        }))
+        .filter(entry => isUsableModel(entry.id))
+        .sort((a, b) => {
+          const diff = rankModel(a.id) - rankModel(b.id);
+          return diff !== 0 ? diff : a.id.localeCompare(b.id);
+        });
+
+      return usable.length ? usable : fallback;
+
+    } catch {
+      return fallback;
+    }
   }
 
   async load(modelId, onProgress = () => {}) {
